@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    /* Surface ladder */
+    --bg:              oklch(17% 0.012 240);
+    --bg-2:            oklch(20% 0.014 240);
+    --surface:         oklch(23% 0.016 240);
+    --surface-2:       oklch(26% 0.018 240);
+    --hairline:        oklch(32% 0.020 240);
+    --hairline-strong: oklch(38% 0.024 240);
+
+    /* Ink */
+    --ink:   oklch(96% 0.005 240);
+    --ink-2: oklch(82% 0.012 240);
+    --muted: oklch(62% 0.018 240);
+    --faint: oklch(48% 0.018 240);
+
+    /* Accent (cyan hue 200) */
+    --accent:      oklch(80% 0.115 200);
+    --accent-2:    oklch(72% 0.115 200);
+    --accent-ink:  oklch(20% 0.04 240);
+    --accent-soft: oklch(80% 0.115 200 / 0.12);
+    --accent-glow: oklch(80% 0.115 200 / 0.18);
+
+    /* Status */
+    --warn:   oklch(80% 0.13 70);
+    --good:   oklch(78% 0.13 155);
+    --danger: oklch(72% 0.16 25);
+
+    /* Radius */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+
+    /* Typography */
+    --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: inherit;
+    letter-spacing: inherit;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  button:active {
+    transform: translateY(1px);
+  }
+
+  input, select {
+    font-family: var(--font-sans);
+    font-size: inherit;
+    letter-spacing: inherit;
+    color: var(--ink);
+    background: transparent;
+    outline: none;
+  }
+
+  select option {
+    background: var(--bg-2);
+    color: var(--ink);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
