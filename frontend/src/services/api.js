@@ -1,13 +1,23 @@
-const BASE = 'http://localhost:8000'
 
-// TODO: backend needs POST /upload (multipart/form-data)
-// Expected response: { id: string, name: string, size: number, type: string, status: 'queued' }
-export async function uploadFile(file) {
-  const form = new FormData()
-  form.append('file', file)
-  const res = await fetch(`${BASE}/upload`, { method: 'POST', body: form })
-  if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`)
-  return res.json()
+const BASE = 'http://127.0.0.1:8000'; 
+
+
+export const getReviewGuide = async (formData) => {
+  try {
+    const response = await fetch(`${BASE}/upload`, {
+      method: 'POST',
+      body: formData, 
+    })
+    if(response.ok){
+      const data = await response.json(); 
+      return data
+    }
+    else {
+      throw new Error(`Server Error ${response.status}`);
+    }
+  } catch (_) {
+    return Error(`Failed to upload`); 
+  }
 }
 
 // TODO: backend needs GET /files/{id}/status

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../Icons'
 import { getFileStatus } from '../../services/api'
 
@@ -57,6 +57,31 @@ function StatusPill({ status }) {
 
 function TableRow({ file, setFiles }) {
   const [hovered, setHovered] = useState(false)
+  const [menuPos, setMenuPos] = useState(null)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    if (!menuPos) return
+    function onOutsideClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuPos(null)
+    }
+    document.addEventListener('mousedown', onOutsideClick)
+    return () => document.removeEventListener('mousedown', onOutsideClick)
+  }, [menuPos])
+
+  function handleMenuToggle(e) {
+    if (menuPos) {
+      setMenuPos(null)
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect()
+      setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
+  }
+
+  function handleRemove() {
+    setFiles((prev) => prev.filter((f) => f.id !== file.id))
+    setMenuPos(null)
+  }
 
   const ext = file.type
     ? file.type.includes('/')
@@ -147,28 +172,73 @@ function TableRow({ file, setFiles }) {
           borderBottom: '1px solid var(--hairline)',
         }}
       >
-        <button
-          style={{
-            width: '28px',
-            height: '28px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 'var(--r-sm)',
-            border: '1px solid var(--hairline)',
-            background: 'transparent',
-            color: 'var(--muted)',
-            cursor: 'pointer',
-          }}
-        >
-          <Icon.More size={14} />
-        </button>
+        <div style={{ display: 'inline-block' }}>
+          <button
+            onClick={handleMenuToggle}
+            style={{
+              width: '28px',
+              height: '28px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 'var(--r-sm)',
+              border: '1px solid var(--hairline)',
+              background: menuPos ? 'var(--surface-2)' : 'transparent',
+              color: 'var(--muted)',
+              cursor: 'pointer',
+            }}
+          >
+            <Icon.More size={14} />
+          </button>
+
+          {menuPos && (
+            <div
+              ref={menuRef}
+              style={{
+                position: 'fixed',
+                top: menuPos.top,
+                right: menuPos.right,
+                background: 'var(--surface)',
+                border: '1px solid var(--hairline-strong)',
+                borderRadius: 'var(--r-md)',
+                boxShadow: '0 8px 24px oklch(0% 0 0 / 0.3)',
+                minWidth: '140px',
+                zIndex: 200,
+                overflow: 'hidden',
+              }}
+            >
+              <button
+                onClick={handleRemove}
+                style={{
+                  width: '100%',
+                  padding: '9px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'oklch(65% 0.2 25)',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'oklch(65% 0.2 25 / 0.08)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <Icon.Trash size={13} />
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
       </td>
     </tr>
   )
 }
 
-export default function UploadsTable({ files, setFiles }) {
+export default function UploadsTable({ files, setFiles, onAddFiles }) {
+  const addInputRef = useRef(null)
+
   useEffect(() => {
     const pending = files.filter((f) => f.status !== 'analyzed')
     if (pending.length === 0) return
@@ -211,7 +281,40 @@ export default function UploadsTable({ files, setFiles }) {
           Recent uploads
         </span>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Add files button */}
+          <button
+            onClick={() => addInputRef.current?.click()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '5px 12px',
+              border: '1px solid var(--hairline)',
+              borderRadius: 'var(--r-sm)',
+              background: 'transparent',
+              color: 'var(--ink-2)',
+              fontSize: '12.5px',
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            <Icon.Plus size={13} />
+            Add files
+          </button>
+          <input
+            ref={addInputRef}
+            type="file"
+            multiple
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              if (e.target.files?.length) {
+                onAddFiles(e.target.files)
+                e.target.value = ''
+              }
+            }}
+          />
+
           {/* Filter button */}
           <button
             style={{

@@ -18,6 +18,7 @@ import {
   Network,
   Plus,
   Inbox,
+  Trash2,
 } from 'lucide-react'
 
 export const Icon = {
@@ -40,4 +41,5 @@ export const Icon = {
   Node: Network,
   Plus,
   Empty: Inbox,
+  Trash: Trash2,
 }

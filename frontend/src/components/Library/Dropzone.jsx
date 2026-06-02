@@ -1,29 +1,9 @@
 import { useRef, useState } from 'react'
 import { Icon } from '../Icons'
-import { uploadFile } from '../../services/api'
 
-export default function Dropzone({ files, setFiles }) {
+export default function Dropzone({ onAddFiles }) {
   const [isOver, setIsOver] = useState(false)
   const inputRef = useRef(null)
-
-  function handleFiles(fileList) {
-    const newEntries = Array.from(fileList).map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      size: file.size,
-      type: file.type || file.name.split('.').pop(),
-      status: 'queued',
-      timestamp: new Date(),
-    }))
-
-    setFiles((prev) => [...prev, ...newEntries])
-
-    Array.from(fileList).forEach((file) => {
-      uploadFile(file).catch(() => {
-        // backend not yet live — silently skip
-      })
-    })
-  }
 
   return (
     <div
@@ -36,7 +16,7 @@ export default function Dropzone({ files, setFiles }) {
       }}
       onDragOver={(e) => { e.preventDefault(); setIsOver(true) }}
       onDragLeave={() => setIsOver(false)}
-      onDrop={(e) => { e.preventDefault(); setIsOver(false); handleFiles(e.dataTransfer.files) }}
+      onDrop={(e) => { e.preventDefault(); setIsOver(false); onAddFiles(e.dataTransfer.files) }}
     >
       <div
         style={{
@@ -51,7 +31,6 @@ export default function Dropzone({ files, setFiles }) {
           background: isOver ? 'var(--accent-soft)' : 'transparent',
         }}
       >
-        {/* Cloud icon box */}
         <div
           style={{
             width: '72px',
@@ -67,7 +46,6 @@ export default function Dropzone({ files, setFiles }) {
           <Icon.Cloud size={32} color="var(--accent)" strokeWidth={1.5} />
         </div>
 
-        {/* Title */}
         <p
           style={{
             fontSize: '22px',
@@ -80,7 +58,6 @@ export default function Dropzone({ files, setFiles }) {
           Drop your files here
         </p>
 
-        {/* Subtitle */}
         <p
           style={{
             fontSize: '13.5px',
@@ -102,7 +79,6 @@ export default function Dropzone({ files, setFiles }) {
           </span>
         </p>
 
-        {/* Select files button */}
         <button
           style={{
             padding: '8px 20px',
@@ -113,13 +89,13 @@ export default function Dropzone({ files, setFiles }) {
             fontWeight: 600,
             border: 'none',
             marginTop: '4px',
+            cursor: 'pointer',
           }}
           onClick={() => inputRef.current?.click()}
         >
           Select files
         </button>
 
-        {/* Hidden file input */}
         <input
           ref={inputRef}
           type="file"
@@ -127,7 +103,7 @@ export default function Dropzone({ files, setFiles }) {
           style={{ display: 'none' }}
           onChange={(e) => {
             if (e.target.files?.length) {
-              handleFiles(e.target.files)
+              onAddFiles(e.target.files)
               e.target.value = ''
             }
           }}

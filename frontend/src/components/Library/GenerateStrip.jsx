@@ -1,16 +1,20 @@
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '../Icons'
+import { getReviewGuide } from '../../services/api'
 
-export default function GenerateStrip({ files, generateConfig, setGenerateConfig, setQuestions, resetTest }) {
+export default function GenerateStrip({ files, generateConfig, setGenerateConfig, setQuestions, resetTest, formData }) {
   const navigate = useNavigate()
   const analyzedCount = files.filter((f) => f.status === 'analyzed').length
-  const isEnabled = analyzedCount > 0
+  const isEnabled = files.filter((f) => f.status !== 'error').length > 0
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!isEnabled) return
     resetTest()
-    // TODO: call generateTest() with real API once backend is ready
-    // For now, set placeholder questions for UI testing
+
+    // gets question and answer data
+    const data = await getReviewGuide(formData); 
+    console.log(data); 
+
     setQuestions([
       {
         id: 1,
@@ -130,7 +134,7 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
               marginBottom: 0,
             }}
           >
-            {analyzedCount} file(s) ready · Takes about 8 seconds
+            {analyzedCount > 0 ? `${analyzedCount} file(s) ready` : `${files.filter((f) => f.status !== 'error').length} file(s) queued`} · Takes about 8 seconds
           </p>
         </div>
 

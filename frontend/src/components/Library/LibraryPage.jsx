@@ -1,6 +1,7 @@
 import Dropzone from './Dropzone'
 import GenerateStrip from './GenerateStrip'
 import UploadsTable from './UploadsTable'
+import { useState } from 'react';
 
 export default function LibraryPage({
   files,
@@ -10,6 +11,27 @@ export default function LibraryPage({
   setQuestions,
   resetTest,
 }) {
+  const [formData, setFormData] = useState();
+
+  async function uploadFile(file) {
+    const data = new FormData();
+    data.append('file', file);
+    setFormData(data); 
+  }
+
+  function handleAddFiles(fileList) {
+    const newEntries = Array.from(fileList).map((file) => ({
+      id: crypto.randomUUID(),
+      name: file.name,
+      size: file.size,
+      type: file.type || file.name.split('.').pop(),
+      status: 'queued',
+      timestamp: new Date(),
+    }))
+    setFiles((prev) => [...prev, ...newEntries])
+    Array.from(fileList).forEach((file, i) => uploadFile(file, newEntries[i].id))
+  }
+
   return (
     <div
       style={{
@@ -75,10 +97,19 @@ export default function LibraryPage({
           </p>
         </div>
 
-        {/* Dropzone */}
-        <div style={{ marginBottom: '18px' }}>
-          <Dropzone files={files} setFiles={setFiles} />
-        </div>
+        {/* Dropzone — hidden once files exist */}
+        {files.length === 0 && (
+          <div style={{ marginBottom: '18px' }}>
+            <Dropzone onAddFiles={handleAddFiles} />
+          </div>
+        )}
+
+        {/* Uploads table — replaces dropzone once files are added */}
+        {files.length > 0 && (
+          <div style={{ marginBottom: '18px' }}>
+            <UploadsTable files={files} setFiles={setFiles} onAddFiles={handleAddFiles} />
+          </div>
+        )}
 
         {/* Generate strip */}
         <div style={{ marginBottom: '18px' }}>
@@ -88,11 +119,9 @@ export default function LibraryPage({
             setGenerateConfig={setGenerateConfig}
             setQuestions={setQuestions}
             resetTest={resetTest}
+            formData={formData}
           />
         </div>
-
-        {/* Uploads table */}
-        <UploadsTable files={files} setFiles={setFiles} />
       </div>
     </div>
   )
