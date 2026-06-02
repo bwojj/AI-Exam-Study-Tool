@@ -26,10 +26,11 @@ app.add_middleware(
 class ReviewGuide(BaseModel):
     questions: dict[int, str]
     answers: dict[int, str]
+    options: dict[int, list[str]]
 
 @app.post("/upload")
 # async funtion that must take a file 
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), type: str = "multiple-choice", questions: int = 10):
     # reads bytes of the file
     contents = await file.read() 
 
@@ -52,28 +53,81 @@ async def upload_file(file: UploadFile = File(...)):
     # defines LLM to have structured output 
     llm = base_llm.with_structured_output(ReviewGuide)
 
-    # defines system message instructions for LLM - COT prompt
-    system_prompt = SystemMessagePromptTemplate.from_template(
-        """
-        You are a helpful assistant designed to help students study for an exam with ranging topics.
-        A PDF File, or multiple PDF files, will be uploaded, as well as the number of questions the student
-        wishes for the exam to be. The PDF file will be in text format, already parsed with Python PYPDF, some
-        words may be jumpled, use best context to figure out the problems. When creating the exams follow
-        these exact steps denoted in backticks (``)
+    # defines system message instructions for LLM - COT prompt based on type of problems
+    if type == 'multiple-choice':
+        system_prompt = SystemMessagePromptTemplate.from_template(
+            """
+                You are a helpful assistant designed to help students study for an exam with ranging topics.
+                A PDF File, or multiple PDF files, will be uploaded, as well as the number of questions the student
+                wishes for the exam to be. The PDF file will be in text format, already parsed with Python PYPDF, some
+                words may be jumbled, use best context to figure out the problems. When creating the exams follow
+                these exact steps denoted in backticks (``)
 
-        `
-            - Fully digest and read every line of the uploaded text content (from PDF)
-            - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
-            - Determine the exact number of questions the user specified 
-            - Create exam questions relating to specific problems, or topics from the PDF text 
-            - After creating the exam questions, double check they are solveable 
-            - After creating the exam questions, double check they are of the same type and difficulty
-            as text problems from the PDF 
-            - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
-            as the value, the second with the question number as a key, then the answer as the value
-        `
-        """
-    )
+                `
+                    - Fully digest and read every line of the uploaded text content (from PDF)
+                    - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
+                    - Determine the exact number of questions the user specified 
+                    - Create multiple choice exam questions relating to specific problems, or topics from the PDF text 
+                    - Create 4 different choices to choose from for each problem, making sure they are all valid in problem context 
+                    - After creating the exam questions, double check they are solveable 
+                    - After creating the exam questions, double check they are of the same type and difficulty
+                    as text problems from the PDF 
+                    - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
+                    as the value, the second with the question number as a key, then the answer as the value, and the 3rd with the problem
+                    number as the key, and the alphebetical options with the 
+                    answer they correspond to in a list such as ["A. option here", "B. option here"] and so on. 
+                `
+            """
+        )
+    elif type == 'short-answer':
+        system_prompt = SystemMessagePromptTemplate.from_template(
+            """
+                You are a helpful assistant designed to help students study for an exam with ranging topics.
+                A PDF File, or multiple PDF files, will be uploaded, as well as the number of questions the student
+                wishes for the exam to be. The PDF file will be in text format, already parsed with Python PYPDF, some
+                words may be jumbled, use best context to figure out the problems. When creating the exams follow
+                these exact steps denoted in backticks (``)
+
+                `
+                    - Fully digest and read every line of the uploaded text content (from PDF)
+                    - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
+                    - Determine the exact number of questions the user specified 
+                    - Create short answer exam questions relating to specific problems, or topics from the PDF text 
+                    - After creating the exam questions, double check they are solveable 
+                    - After creating the exam questions, double check they are of the same type and difficulty
+                    as text problems from the PDF 
+                    - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
+                    as the value, the second with the question number as a key, then the answer as the value, set the third 'options' dictionary
+                    to None
+                `
+            """
+        )
+    elif type == 'mixed-format':
+        system_prompt = SystemMessagePromptTemplate.from_template(
+            """
+                You are a helpful assistant designed to help students study for an exam with ranging topics.
+                A PDF File, or multiple PDF files, will be uploaded, as well as the number of questions the student
+                wishes for the exam to be. The PDF file will be in text format, already parsed with Python PYPDF, some
+                words may be jumbled, use best context to figure out the problems. When creating the exams follow
+                these exact steps denoted in backticks (``)
+
+                `
+                    - Fully digest and read every line of the uploaded text content (from PDF)
+                    - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
+                    - Determine the exact number of questions the user specified 
+                    - Create 1/4 of the specified amount as multiple choice exam questions, and 3/4
+                     as short answer questions, all relating to specific problems, or topics from the PDF text 
+                    - Create 4 different choices to choose from for each multiple choice problem, making sure they are all valid in problem context 
+                    - After creating the exam questions, double check they are solveable 
+                    - After creating the exam questions, double check they are of the same type and difficulty
+                    as text problems from the PDF 
+                    - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
+                    as the value, the second with the question number as a key, then the answer as the value, and the 3rd with the
+                     multiple choice question number as the key, and the alphebetical options with the 
+                    answer they correspond to such as "A. option here", "B. option here" and so on  
+                `
+            """
+        )
 
     # defines user prompt template for PDF contents to be injected, and number of questions 
     user_prompt = HumanMessagePromptTemplate.from_template(
@@ -99,7 +153,7 @@ async def upload_file(file: UploadFile = File(...)):
     )
 
     # returns the output 
-    output = chain.invoke({"number": 2, "context": text})
+    output = chain.invoke({"number": questions, "context": text})
 
     return output
 
