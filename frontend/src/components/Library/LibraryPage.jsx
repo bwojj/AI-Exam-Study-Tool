@@ -8,6 +8,7 @@ export default function LibraryPage({
   setFiles,
   generateConfig,
   setGenerateConfig,
+  questions,
   setQuestions,
   resetTest,
 }) {
@@ -118,6 +119,7 @@ export default function LibraryPage({
             generateConfig={generateConfig}
             setGenerateConfig={setGenerateConfig}
             setQuestions={setQuestions}
+            questions={questions}
             resetTest={resetTest}
             formData={formData}
           />

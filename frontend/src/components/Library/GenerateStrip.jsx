@@ -11,11 +11,27 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
     if (!isEnabled) return
     resetTest()
 
+    if (formData){
+      formData.append("type", generateConfig.style); 
+      formData.append("questions", generateConfig.count); ;
+    }
     // gets question and answer data
     const data = await getReviewGuide(formData); 
     console.log(data); 
 
-    setQuestions([
+    
+    Object.entries(data.questions).forEach(([key, value]) => {
+      setQuestions((prev) =>
+        [...prev, {
+          id: key, 
+          question: value, 
+          choices: data.options[key], 
+          correctIndex: data.answers[key], 
+        }] 
+      ) 
+    })
+
+    /* setQuestions([
       {
         id: 1,
         topic: 'Neural Networks',
@@ -56,7 +72,7 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
         explanation:
           'Momentum accumulates a velocity vector in directions of persistent gradient, helping to navigate ravines and reduce oscillations.',
       },
-    ])
+    ]) */ 
     navigate('/test')
   }
 

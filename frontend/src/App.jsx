@@ -36,6 +36,7 @@ export default function App() {
               generateConfig={generateConfig}
               setGenerateConfig={setGenerateConfig}
               setQuestions={setQuestions}
+              questions={questions}
               resetTest={resetTest}
             />
           }

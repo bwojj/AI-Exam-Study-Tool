@@ -1,6 +1,8 @@
+import os
+from dotenv import load_dotenv
 import io 
 import pypdf 
-from fastapi import FastAPI, UploadFile, File 
+from fastapi import FastAPI, UploadFile, File, Form
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 from pydantic import BaseModel, Field
@@ -14,6 +16,8 @@ origins = [
     "http://127.0.0.1:5176",  
 ]
 
+load_dotenv()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,            
@@ -25,14 +29,16 @@ app.add_middleware(
 # defines structured output class for LLM 
 class ReviewGuide(BaseModel):
     questions: dict[int, str]
-    answers: dict[int, str]
+    answers: dict[int, int]
     options: dict[int, list[str]]
 
 @app.post("/upload")
 # async funtion that must take a file 
-async def upload_file(file: UploadFile = File(...), type: str = "multiple-choice", questions: int = 10):
+async def upload_file(file: UploadFile = File(...), type: str = Form("type"), questions: int = Form("questions")):
     # reads bytes of the file
     contents = await file.read() 
+
+    print(type)
 
     # hands bytes from the contents to pypdf to read and understand
     reader = pypdf.PdfReader(io.BytesIO(contents))
@@ -47,14 +53,15 @@ async def upload_file(file: UploadFile = File(...), type: str = "multiple-choice
     base_llm = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
         temperature=0.0,
-        google_api_key="AIzaSyAkc5PmCMtsRm7Vjyp2o_L2S5BGkKSk4z0"
+        google_api_key=os.environ.get("GOOGLE_API_KEY")
     )
 
     # defines LLM to have structured output 
     llm = base_llm.with_structured_output(ReviewGuide)
 
     # defines system message instructions for LLM - COT prompt based on type of problems
-    if type == 'multiple-choice':
+    if type == 'Multiple choice':
+        print("Multiple choice")
         system_prompt = SystemMessagePromptTemplate.from_template(
             """
                 You are a helpful assistant designed to help students study for an exam with ranging topics.
@@ -72,14 +79,15 @@ async def upload_file(file: UploadFile = File(...), type: str = "multiple-choice
                     - After creating the exam questions, double check they are solveable 
                     - After creating the exam questions, double check they are of the same type and difficulty
                     as text problems from the PDF 
-                    - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
-                    as the value, the second with the question number as a key, then the answer as the value, and the 3rd with the problem
+                    - Output with Review Guide model with exactly 3 dictionaries in that, one with the question number as key, then the problem text
+                    as the value, the second with the question number as a key, then the answer index as the value (options indexed 0-3), and the 3rd with the problem
                     number as the key, and the alphebetical options with the 
-                    answer they correspond to in a list such as ["A. option here", "B. option here"] and so on. 
+                    answer they correspond to in a list such as ["option here", "option here"] and so on DO NOT include the letter in the options list. 
                 `
             """
         )
-    elif type == 'short-answer':
+    elif type == 'Short answer':
+        print("Short Answer")
         system_prompt = SystemMessagePromptTemplate.from_template(
             """
                 You are a helpful assistant designed to help students study for an exam with ranging topics.
@@ -102,7 +110,8 @@ async def upload_file(file: UploadFile = File(...), type: str = "multiple-choice
                 `
             """
         )
-    elif type == 'mixed-format':
+    elif type == 'Mixed format':
+        print("Mixed Format")
         system_prompt = SystemMessagePromptTemplate.from_template(
             """
                 You are a helpful assistant designed to help students study for an exam with ranging topics.
@@ -124,7 +133,7 @@ async def upload_file(file: UploadFile = File(...), type: str = "multiple-choice
                     - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
                     as the value, the second with the question number as a key, then the answer as the value, and the 3rd with the
                      multiple choice question number as the key, and the alphebetical options with the 
-                    answer they correspond to such as "A. option here", "B. option here" and so on  
+                    answer they correspond to such as "option here", "option here" and so on  
                 `
             """
         )
@@ -148,7 +157,8 @@ async def upload_file(file: UploadFile = File(...), type: str = "multiple-choice
         | llm
         | {
             "questions": lambda x: x.questions, 
-            "answers": lambda x: x.answers
+            "answers": lambda x: x.answers,
+            "options": lambda x: x.options
         }
     )
 
