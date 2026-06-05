@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import MarkdownContent from './MarkdownContent'
 
 const stateStyles = {
   default: {
@@ -35,7 +36,7 @@ const stateStyles = {
   },
 }
 
-export default function ChoiceButton({ letter, text, state, disabled, onClick }) {
+export default function ChoiceButton({ letter, text, state, disabled, onClick, containsMarkdown }) {
   const [hovered, setHovered] = useState(false)
   const styles = stateStyles[state] ?? stateStyles.default
 
@@ -81,7 +82,9 @@ export default function ChoiceButton({ letter, text, state, disabled, onClick })
       >
         {letter}
       </span>
-      <span style={{ lineHeight: 1.5, paddingTop: 4 }}>{text}</span>
+      <span style={{ lineHeight: 1.5, paddingTop: 4 }}>
+        <MarkdownContent content={text} isMarkdown={containsMarkdown} />
+      </span>
     </button>
   )
 }

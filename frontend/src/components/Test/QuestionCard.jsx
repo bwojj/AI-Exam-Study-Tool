@@ -1,5 +1,6 @@
 import { Icon } from '../Icons'
 import ChoiceButton from './ChoiceButton'
+import MarkdownContent from './MarkdownContent'
 
 export default function QuestionCard({
   q,
@@ -47,7 +48,7 @@ export default function QuestionCard({
           textWrap: 'balance',
         }}
       >
-        {q.question}
+        <MarkdownContent content={q.question} isMarkdown={q.containsMarkdown} />
       </h2>
 
       {/* Body */}
@@ -60,7 +61,7 @@ export default function QuestionCard({
             margin: '0 0 20px',
           }}
         >
-          {q.body}
+          <MarkdownContent content={q.body} isMarkdown={q.containsMarkdown} />
         </p>
       )}
 
@@ -109,6 +110,7 @@ export default function QuestionCard({
               state={state}
               disabled={submitted}
               onClick={() => onSelect(index)}
+              containsMarkdown={q.containsMarkdown}
             />
           )
         })}
@@ -174,7 +176,7 @@ export default function QuestionCard({
 
           {/* Body */}
           <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.6 }}>
-            {q.explanation}
+            <MarkdownContent content={q.explanation} isMarkdown={q.containsMarkdown} />
           </div>
         </div>
       )}

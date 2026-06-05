@@ -27,6 +27,10 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
           question: value, 
           choices: data.options[key], 
           correctIndex: data.answers[key], 
+          body: data.body[key], 
+          explanation: data.explanation[key], 
+          topic: data.topic[key],
+          containsMarkdown: data.containsMarkdown[key], 
         }] 
       ) 
     })

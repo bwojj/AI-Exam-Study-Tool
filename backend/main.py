@@ -2,12 +2,19 @@ import os
 from dotenv import load_dotenv
 import io 
 import pypdf 
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Depends
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from database import engine, Base, get_db
+import models
+from schemas import ReviewGuide 
+from datetime import datetime
 
+# creates the database tables, to be used 
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -26,19 +33,11 @@ app.add_middleware(
     allow_headers=["*"],              
 )
 
-# defines structured output class for LLM 
-class ReviewGuide(BaseModel):
-    questions: dict[int, str]
-    answers: dict[int, int]
-    options: dict[int, list[str]]
-
 @app.post("/upload")
 # async funtion that must take a file 
-async def upload_file(file: UploadFile = File(...), type: str = Form("type"), questions: int = Form("questions")):
+async def upload_file(file: UploadFile = File(...), type: str = Form("type"), questions: int = Form("questions"), db: Session = Depends(get_db)):
     # reads bytes of the file
     contents = await file.read() 
-
-    print(type)
 
     # hands bytes from the contents to pypdf to read and understand
     reader = pypdf.PdfReader(io.BytesIO(contents))
@@ -74,6 +73,9 @@ async def upload_file(file: UploadFile = File(...), type: str = Form("type"), qu
                     - Fully digest and read every line of the uploaded text content (from PDF)
                     - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
                     - Determine the exact number of questions the user specified 
+                     - If the multiple choice questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
+                    text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
+                    to be displayed as they should be 
                     - Create multiple choice exam questions relating to specific problems, or topics from the PDF text 
                     - Create 4 different choices to choose from for each problem, making sure they are all valid in problem context 
                     - After creating the exam questions, double check they are solveable 
@@ -83,6 +85,11 @@ async def upload_file(file: UploadFile = File(...), type: str = Form("type"), qu
                     as the value, the second with the question number as a key, then the answer index as the value (options indexed 0-3), and the 3rd with the problem
                     number as the key, and the alphebetical options with the 
                     answer they correspond to in a list such as ["option here", "option here"] and so on DO NOT include the letter in the options list. 
+                    - Provide an explanation for the correct answer to the explanation key in the output, using the integer question number as the key, and the string explanation as value. 
+                    - Provide a body text to explain how to go about answering the question such as: "Select an option below" use the integer question number as the key, and the string body as the value.
+                    - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topci as the value.
+                    - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
+                    a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
                 `
             """
         )
@@ -100,13 +107,22 @@ async def upload_file(file: UploadFile = File(...), type: str = Form("type"), qu
                     - Fully digest and read every line of the uploaded text content (from PDF)
                     - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
                     - Determine the exact number of questions the user specified 
-                    - Create short answer exam questions relating to specific problems, or topics from the PDF text 
+                    - Determine the topic of the exam
+                    - Create short answer exam questions relating to specific problems, or topics from the PDF text
+                    - If the short answer questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
+                    text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
+                    to be displayed as they should be 
                     - After creating the exam questions, double check they are solveable 
                     - After creating the exam questions, double check they are of the same type and difficulty
                     as text problems from the PDF 
                     - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
                     as the value, the second with the question number as a key, then the answer as the value, set the third 'options' dictionary
                     to None
+                   - Provide an explanation for the correct answer to the explanation key in the output, using the integer question number as the key, and the string explanation as value. 
+                   - Provide a body text to explain how to go about answering the question such as: "Select an option below" use the integer question number as the key, and the string body as the value.
+                   - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value.
+                   - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
+                    a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
                 `
             """
         )
@@ -123,7 +139,10 @@ async def upload_file(file: UploadFile = File(...), type: str = Form("type"), qu
                 `
                     - Fully digest and read every line of the uploaded text content (from PDF)
                     - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
-                    - Determine the exact number of questions the user specified 
+                    - Determine the exact number of questions the user specified
+                     - If the mixed format questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
+                    text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
+                    to be displayed as they should be  
                     - Create 1/4 of the specified amount as multiple choice exam questions, and 3/4
                      as short answer questions, all relating to specific problems, or topics from the PDF text 
                     - Create 4 different choices to choose from for each multiple choice problem, making sure they are all valid in problem context 
@@ -134,7 +153,11 @@ async def upload_file(file: UploadFile = File(...), type: str = Form("type"), qu
                     as the value, the second with the question number as a key, then the answer as the value, and the 3rd with the
                      multiple choice question number as the key, and the alphebetical options with the 
                     answer they correspond to such as "option here", "option here" and so on  
-                `
+                    - Provide an explanation for the correct answer to the explanation key in the output, using the integer question number as the key, and the string explanation as value. 
+                    - Provide a body text to explain how to go about answering the question such as: "Select an option below" use the integer question number as the key, and the string body as the value.
+                    - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value.
+                    - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
+                    a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
             """
         )
 
@@ -158,14 +181,39 @@ async def upload_file(file: UploadFile = File(...), type: str = Form("type"), qu
         | {
             "questions": lambda x: x.questions, 
             "answers": lambda x: x.answers,
-            "options": lambda x: x.options
+            "options": lambda x: x.options,
+            "body": lambda x: x.body, 
+            "explanation": lambda x: x.explanation, 
+            "topic": lambda x: x.topic,
+            "containsMarkdown": lambda x: x.containsMarkdown, 
         }
     )
 
     # returns the output 
     output = chain.invoke({"number": questions, "context": text})
 
+    # creates generated test model 
+    generated_test = models.GeneratedTests(
+        date = datetime.now(),
+        number_of_questions = questions, 
+        questions = output["questions"],
+        answers = output["answers"], 
+        options = output["options"], 
+        body = output["body"],
+        explanation = output["explanation"], 
+        topic = output["topic"], 
+        containsMarkdown = output["containsMarkdown"]
+    )
+    # saves and commits to database
+    db.add(generated_test)
+    db.commit()
+
     return output
 
 
 
+@app.get("/tests")
+def get_all_tests(db: Session = Depends(get_db)):
+    # Fetch every row from the GeneratedTests table
+    tests = db.query(models.GeneratedTests).all()
+    return tests
