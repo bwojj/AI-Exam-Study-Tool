@@ -1,10 +1,14 @@
 import { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import AppShell from './components/Shell/AppShell'
 import LibraryPage from './components/Library/LibraryPage'
 import TestPage from './components/Test/TestPage'
+import PracticePage from './components/Practice/PracticePage'
+import AuthPage from './components/Auth/AuthPage'
+import { getSession } from './services/authStore'
 
 export default function App() {
+  const [authed, setAuthed] = useState(() => !!getSession())
   const [files, setFiles] = useState([])
   const [generateConfig, setGenerateConfig] = useState({
     count: 10,
@@ -22,6 +26,10 @@ export default function App() {
     setFlags({})
     setCurrent(0)
     setFinished(false)
+  }
+
+  if (!authed) {
+    return <AuthPage onAuthed={() => setAuthed(true)} />
   }
 
   return (
@@ -58,6 +66,16 @@ export default function App() {
             />
           }
         />
+        <Route
+          path="/practice"
+          element={
+            <PracticePage
+              setQuestions={setQuestions}
+              resetTest={resetTest}
+            />
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
   )

@@ -20,6 +20,52 @@ export const getReviewGuide = async (formData) => {
   }
 }
 
+export const getGeneratedTests = async () => {
+  try{
+    const response = await fetch(`${BASE}/tests`); 
+    if(response.ok) {
+      const data = await response.json();
+      return data; 
+    } else {
+      throw new Error(`Server Error ${response.status}`);
+    }
+  } catch(_) {
+    return Error('Failed to get Tests'); 
+  }
+}
+
+export const signIn = async ({ email, password }) => {
+  const res = await fetch(`${BASE}/auth/signin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    const err = new Error(body.detail || 'Sign in failed')
+    err.status = res.status
+    err.detail = body.detail || ''
+    throw err
+  }
+  return res.json()
+}
+
+export const signUp = async ({ name, email, password }) => {
+  const res = await fetch(`${BASE}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    const err = new Error(body.detail || 'Sign up failed')
+    err.status = res.status
+    err.detail = body.detail || ''
+    throw err
+  }
+  return res.json()
+}
+
 // TODO: backend needs GET /files/{id}/status
 // Expected response: { id: string, status: 'queued' | 'processing' | 'analyzed' }
 export async function getFileStatus(id) {

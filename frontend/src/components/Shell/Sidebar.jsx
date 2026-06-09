@@ -3,7 +3,7 @@ import { Icon } from '../Icons'
 
 const NAV = [
   { label: 'Library', icon: Icon.Folder, path: '/' },
-  { label: 'Practice', icon: Icon.Beaker, path: '/test' },
+  { label: 'Practice', icon: Icon.Beaker, path: '/practice' },
   { label: 'Settings', icon: Icon.Gear, path: '/settings' },
 ]
 

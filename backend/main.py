@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 import io 
 import pypdf 
+from typing import Annotated 
+from starlette import status 
 from fastapi import FastAPI, UploadFile, File, Form, Depends
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
@@ -12,11 +14,14 @@ from database import engine, Base, get_db
 import models
 from schemas import ReviewGuide 
 from datetime import datetime
+import auth 
+from auth import get_current_user
 
 # creates the database tables, to be used 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+app.include_router(auth.router)
 
 origins = [
     "http://localhost:5176",  
@@ -217,3 +222,11 @@ def get_all_tests(db: Session = Depends(get_db)):
     # Fetch every row from the GeneratedTests table
     tests = db.query(models.GeneratedTests).all()
     return tests
+
+user_dependency = Annotated[dict, Depends(get_current_user)]
+
+@app.get("/", status_code=status.HTTP_200_OK)
+async def user(user: user_dependency, db: get_db):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    return {"User": user}

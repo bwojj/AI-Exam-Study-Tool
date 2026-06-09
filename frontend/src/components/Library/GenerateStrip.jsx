@@ -20,20 +20,17 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
     console.log(data); 
 
     
-    Object.entries(data.questions).forEach(([key, value]) => {
-      setQuestions((prev) =>
-        [...prev, {
-          id: key, 
-          question: value, 
-          choices: data.options[key], 
-          correctIndex: data.answers[key], 
-          body: data.body[key], 
-          explanation: data.explanation[key], 
-          topic: data.topic[key],
-          containsMarkdown: data.containsMarkdown[key], 
-        }] 
-      ) 
-    })
+    const newQuestions = Object.entries(data.questions).map(([key, value]) => ({
+      id: key,
+      question: value,
+      choices: data.options[key],
+      correctIndex: data.answers[key],
+      body: data.body[key],
+      explanation: data.explanation[key],
+      topic: data.topic[key],
+      containsMarkdown: data.containsMarkdown[key],
+    }))
+    setQuestions(newQuestions)
 
     /* setQuestions([
       {

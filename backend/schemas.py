@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr
 class UserBase(BaseModel): 
     username: str
     email: str 
+    password: str 
 
 # defines structured output class for LLM 
 class ReviewGuide(BaseModel):
