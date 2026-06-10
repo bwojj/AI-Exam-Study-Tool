@@ -40,7 +40,7 @@ app.add_middleware(
 
 @app.post("/upload")
 # async funtion that must take a file 
-async def upload_file(file: UploadFile = File(...), type: str = Form("type"), questions: int = Form("questions"), db: Session = Depends(get_db)):
+async def upload_file(file: UploadFile = File(...), type: str = Form("type"), questions: int = Form("questions"), name: str = Form("name"), db: Session = Depends(get_db)):
     # reads bytes of the file
     contents = await file.read() 
 
@@ -199,6 +199,7 @@ async def upload_file(file: UploadFile = File(...), type: str = Form("type"), qu
 
     # creates generated test model 
     generated_test = models.GeneratedTests(
+        name = name, 
         date = datetime.now(),
         number_of_questions = questions, 
         questions = output["questions"],

@@ -14,6 +14,7 @@ export default function App() {
     count: 10,
     difficulty: 'Mixed',
     style: 'Multiple choice',
+    name: '',
   })
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})   // { [questionId]: choiceIndex }

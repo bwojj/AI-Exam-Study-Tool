@@ -29,6 +29,7 @@ export default function AuthPage({ onAuthed }) {
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [pw, setPw] = useState('')
   const [show, setShow] = useState(false)
   const [remember, setRemember] = useState(true)
@@ -43,6 +44,7 @@ export default function AuthPage({ onAuthed }) {
     setMode(m)
     setErrors({})
     setPw('')
+    setUsername('')
     setShow(false)
   }
 
@@ -56,8 +58,8 @@ export default function AuthPage({ onAuthed }) {
     setErrors({})
     try {
       const data = isUp
-        ? await signUp({ name, email, password: pw })
-        : await signIn({ email, password: pw })
+        ? await signUp({ name, password: pw })
+        : await signIn({ username, password: pw })
       setSession(data, isUp ? true : remember)
       onAuthed()
     } catch (err) {
@@ -73,7 +75,7 @@ export default function AuthPage({ onAuthed }) {
         }
       } else {
         if (status === 401 || detail.includes('invalid') || detail.includes('credential') || detail.includes('incorrect')) {
-          setErrors({ general: 'Incorrect email or password.' })
+          setErrors({ general: 'Incorrect username or password.' })
         } else {
           setErrors({ general: 'Sign in failed. Please try again.' })
         }
@@ -198,26 +200,46 @@ export default function AuthPage({ onAuthed }) {
               </div>
             )}
 
-            <div className="field">
-              <label htmlFor="auth-email">Email</label>
-              <div className="input-wrap">
-                <span className="lead">
-                  <Icon.Mail size={17} strokeWidth={1.6} />
-                </span>
-                <input
-                  id="auth-email"
-                  type="email"
-                  placeholder="you@institution.edu"
-                  autoComplete="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                />
+            {isUp ? (
+              <div className="field">
+                <label htmlFor="auth-email">Email</label>
+                <div className="input-wrap">
+                  <span className="lead">
+                    <Icon.Mail size={17} strokeWidth={1.6} />
+                  </span>
+                  <input
+                    id="auth-email"
+                    type="email"
+                    placeholder="you@institution.edu"
+                    autoComplete="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                {errors.email && (
+                  <div className="field-error" role="alert">{errors.email}</div>
+                )}
               </div>
-              {errors.email && (
-                <div className="field-error" role="alert">{errors.email}</div>
-              )}
-            </div>
+            ) : (
+              <div className="field">
+                <label htmlFor="auth-username">Username</label>
+                <div className="input-wrap">
+                  <span className="lead">
+                    <Icon.User size={17} strokeWidth={1.6} />
+                  </span>
+                  <input
+                    id="auth-username"
+                    type="text"
+                    placeholder="Your username"
+                    autoComplete="username"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="field">
               <label htmlFor="auth-pw">

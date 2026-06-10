@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Icon } from '../Icons'
-import { getFileStatus } from '../../services/api'
 
 function StatusPill({ status }) {
   const styles = {
@@ -55,7 +54,7 @@ function StatusPill({ status }) {
   )
 }
 
-function TableRow({ file, setFiles }) {
+function TestRow({ test, setTests }) {
   const [hovered, setHovered] = useState(false)
   const [menuPos, setMenuPos] = useState(null)
   const menuRef = useRef(null)
@@ -79,15 +78,9 @@ function TableRow({ file, setFiles }) {
   }
 
   function handleRemove() {
-    setFiles((prev) => prev.filter((f) => f.id !== file.id))
+    setTests((prev) => prev.filter((t) => t.id !== test.id))
     setMenuPos(null)
   }
-
-  const ext = file.type
-    ? file.type.includes('/')
-      ? file.type.split('/').pop().toUpperCase()
-      : file.type.toUpperCase()
-    : file.name.split('.').pop().toUpperCase()
 
   return (
     <tr
@@ -98,7 +91,7 @@ function TableRow({ file, setFiles }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Filename */}
+      {/* Name */}
       <td
         style={{
           padding: '12px 20px',
@@ -109,11 +102,11 @@ function TableRow({ file, setFiles }) {
       >
         <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'center' }}>
           <Icon.File size={14} color="var(--muted)" />
-          <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{file.name}</span>
+          <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{test.name || 'Untitled'}</span>
         </div>
       </td>
 
-      {/* Size */}
+      {/* Questions */}
       <td
         style={{
           padding: '12px 20px',
@@ -122,19 +115,7 @@ function TableRow({ file, setFiles }) {
           borderBottom: '1px solid var(--hairline)',
         }}
       >
-        {(file.size / 1024).toFixed(1)} KB
-      </td>
-
-      {/* Type */}
-      <td
-        style={{
-          padding: '12px 20px',
-          fontSize: '13.5px',
-          color: 'var(--ink-2)',
-          borderBottom: '1px solid var(--hairline)',
-        }}
-      >
-        {ext}
+        {test.number_of_questions}
       </td>
 
       {/* Status */}
@@ -146,10 +127,10 @@ function TableRow({ file, setFiles }) {
           borderBottom: '1px solid var(--hairline)',
         }}
       >
-        <StatusPill status={file.status} />
+        <StatusPill status="analyzed" />
       </td>
 
-      {/* Uploaded */}
+      {/* Date */}
       <td
         style={{
           padding: '12px 20px',
@@ -158,9 +139,7 @@ function TableRow({ file, setFiles }) {
           borderBottom: '1px solid var(--hairline)',
         }}
       >
-        {file.timestamp instanceof Date
-          ? file.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : new Date(file.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        {test.date ? new Date(test.date).toLocaleDateString() : '—'}
       </td>
 
       {/* Actions */}
@@ -236,26 +215,8 @@ function TableRow({ file, setFiles }) {
   )
 }
 
-export default function UploadsTable({ files, setFiles, onAddFiles }) {
+export default function UploadsTable({ onAddFiles, tests = [], setTests }) {
   const addInputRef = useRef(null)
-
-  useEffect(() => {
-    const pending = files.filter((f) => f.status !== 'analyzed')
-    if (pending.length === 0) return
-
-    const interval = setInterval(async () => {
-      for (const f of pending) {
-        try {
-          const { status } = await getFileStatus(f.id)
-          setFiles((prev) => prev.map((p) => (p.id === f.id ? { ...p, status } : p)))
-        } catch {
-          // backend not yet live — silently skip
-        }
-      }
-    }, 3000)
-
-    return () => clearInterval(interval)
-  }, [files, setFiles])
 
   return (
     <div
@@ -357,7 +318,7 @@ export default function UploadsTable({ files, setFiles, onAddFiles }) {
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ background: 'var(--bg-2)' }}>
-            {['Filename', 'Size', 'Type', 'Status', 'Uploaded', ''].map((col) => (
+            {['Name', 'Questions', 'Status', 'Date', ''].map((col) => (
               <th
                 key={col}
                 style={{
@@ -378,10 +339,10 @@ export default function UploadsTable({ files, setFiles, onAddFiles }) {
         </thead>
 
         <tbody>
-          {files.length === 0 ? (
+          {tests.length === 0 ? (
             <tr>
               <td
-                colSpan={6}
+                colSpan={5}
                 style={{
                   padding: '48px',
                   textAlign: 'center',
@@ -404,14 +365,14 @@ export default function UploadsTable({ files, setFiles, onAddFiles }) {
                       marginBottom: 0,
                     }}
                   >
-                    No files uploaded yet
+                    No tests generated yet
                   </p>
                 </div>
               </td>
             </tr>
           ) : (
-            files.map((file) => (
-              <TableRow key={file.id} file={file} setFiles={setFiles} />
+            tests.map((test) => (
+              <TestRow key={test.id} test={test} setTests={setTests} />
             ))
           )}
         </tbody>

@@ -1,7 +1,8 @@
 import Dropzone from './Dropzone'
 import GenerateStrip from './GenerateStrip'
 import UploadsTable from './UploadsTable'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getGeneratedTests } from '../../services/api';
 
 export default function LibraryPage({
   files,
@@ -13,11 +14,16 @@ export default function LibraryPage({
   resetTest,
 }) {
   const [formData, setFormData] = useState();
+  const [tests, setTests] = useState([]);
+
+  useEffect(() => {
+    getGeneratedTests().then((data) => {
+      if (Array.isArray(data)) setTests(data);
+    });
+  }, []);
 
   async function uploadFile(file) {
-    const data = new FormData();
-    data.append('file', file);
-    setFormData(data); 
+    setFiles([...file]);
   }
 
   function handleAddFiles(fileList) {
@@ -31,6 +37,9 @@ export default function LibraryPage({
     }))
     setFiles((prev) => [...prev, ...newEntries])
     Array.from(fileList).forEach((file, i) => uploadFile(file, newEntries[i].id))
+    const data = new FormData();
+    data.append('files', files);
+    setFormData(data); 
   }
 
   return (
@@ -108,7 +117,7 @@ export default function LibraryPage({
         {/* Uploads table — replaces dropzone once files are added */}
         {files.length > 0 && (
           <div style={{ marginBottom: '18px' }}>
-            <UploadsTable files={files} setFiles={setFiles} onAddFiles={handleAddFiles} />
+            <UploadsTable files={files} setFiles={setFiles} onAddFiles={handleAddFiles} tests={tests} setTests={setTests} />
           </div>
         )}
 

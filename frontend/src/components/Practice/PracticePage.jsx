@@ -53,7 +53,7 @@ function TestRow({ test, onSelect }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Icon.Beaker size={15} strokeWidth={1.6} color="var(--accent)" />
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>
-            Practice Test
+            {test.name || 'Untitled'}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 16 }}>

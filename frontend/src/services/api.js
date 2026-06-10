@@ -15,8 +15,8 @@ export const getReviewGuide = async (formData) => {
     else {
       throw new Error(`Server Error ${response.status}`);
     }
-  } catch (_) {
-    return Error(`Failed to upload`); 
+  } catch {
+    return Error(`Failed to upload`);
   }
 }
 
@@ -29,16 +29,19 @@ export const getGeneratedTests = async () => {
     } else {
       throw new Error(`Server Error ${response.status}`);
     }
-  } catch(_) {
-    return Error('Failed to get Tests'); 
+  } catch {
+    return Error('Failed to get Tests');
   }
 }
 
-export const signIn = async ({ email, password }) => {
-  const res = await fetch(`${BASE}/auth/signin`, {
+export const signIn = async ({ username, password }) => {
+  const form = new URLSearchParams()
+  form.append('username', username)
+  form.append('password', password)
+  const res = await fetch(`${BASE}/auth/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form,
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
@@ -50,11 +53,11 @@ export const signIn = async ({ email, password }) => {
   return res.json()
 }
 
-export const signUp = async ({ name, email, password }) => {
-  const res = await fetch(`${BASE}/auth/signup`, {
+export const signUp = async ({ name, password }) => {
+  const res = await fetch(`${BASE}/auth/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ username: name, password }),
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
@@ -63,15 +66,7 @@ export const signUp = async ({ name, email, password }) => {
     err.detail = body.detail || ''
     throw err
   }
-  return res.json()
-}
-
-// TODO: backend needs GET /files/{id}/status
-// Expected response: { id: string, status: 'queued' | 'processing' | 'analyzed' }
-export async function getFileStatus(id) {
-  const res = await fetch(`${BASE}/files/${id}/status`)
-  if (!res.ok) throw new Error(`Status check failed: ${res.statusText}`)
-  return res.json()
+  return signIn({ username: name, password })
 }
 
 // TODO: backend needs POST /generate

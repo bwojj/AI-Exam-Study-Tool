@@ -13,7 +13,8 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
 
     if (formData){
       formData.append("type", generateConfig.style); 
-      formData.append("questions", generateConfig.count); ;
+      formData.append("questions", generateConfig.count);
+      formData.append("name", generateConfig.name); 
     }
     // gets question and answer data
     const data = await getReviewGuide(formData); 
@@ -153,6 +154,31 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
           >
             {analyzedCount > 0 ? `${analyzedCount} file(s) ready` : `${files.filter((f) => f.status !== 'error').length} file(s) queued`} · Takes about 8 seconds
           </p>
+
+          {/* Test name */}
+          <div style={{ marginTop: '12px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>
+              Test name
+            </div>
+            <input
+              type="text"
+              placeholder="e.g. Midterm Review"
+              value={generateConfig?.name ?? ''}
+              onChange={(e) =>
+                setGenerateConfig((prev) => ({ ...prev, name: e.target.value }))
+              }
+              style={{
+                padding: '7px 10px',
+                border: '1px solid var(--hairline-strong)',
+                borderRadius: 'var(--r-sm)',
+                background: 'var(--bg-2)',
+                color: 'var(--ink)',
+                fontSize: '13px',
+                width: '200px',
+                outline: 'none',
+              }}
+            />
+          </div>
         </div>
 
         {/* Right: controls + CTA */}
