@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import tempfile
 import io 
 import pypdf 
 from typing import Annotated 
@@ -7,6 +8,9 @@ from starlette import status
 from fastapi import FastAPI, UploadFile, File, Form, Depends
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
+from langchain_community.document_loaders import (
+    TextLoader, PyPDFLoader, Docx2txtLoader, UnstructuredPowerPointLoader
+)
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -38,20 +42,37 @@ app.add_middleware(
     allow_headers=["*"],              
 )
 
+def extract_file_information(file): 
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+        temp_file.write(file.file.read())
+        temp_path = temp_file.name
+    try: 
+        file_type = file.content_type.split('/')[1]
+        match file_type: 
+            case 'pdf':
+                loader = PyPDFLoader(temp_path)
+            case 'docx': 
+                loader = Docx2txtLoader(temp_path)
+            case 'pptx':
+                loader = UnstructuredPowerPointLoader(temp_path)
+            case 'txt':
+                loader = TextLoader(temp_path)
+        docs = loader.load()
+
+        return "\n".join([doc.page_content for doc in docs])
+    finally: 
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
 @app.post("/upload")
 # async funtion that must take a file 
-async def upload_file(file: UploadFile = File(...), type: str = Form("type"), questions: int = Form("questions"), name: str = Form("name"), db: Session = Depends(get_db)):
-    # reads bytes of the file
-    contents = await file.read() 
-
-    # hands bytes from the contents to pypdf to read and understand
-    reader = pypdf.PdfReader(io.BytesIO(contents))
-
-    # variable to hold the text 
+async def upload_file(files: list[UploadFile] = File(...), type: str = Form("type"), questions: int = Form("questions"), name: str = Form("name"), db: Session = Depends(get_db)):
+    # variable to hold the text from all files 
     text = ""
-    # loop to add the information to the text variable
-    for page in reader.pages:
-        text += page.extract_text()
+    for file in files:
+        extracted = extract_file_information(file)
+        text += extracted
     
     # defines base llm for langchain 
     base_llm = ChatGoogleGenerativeAI(
@@ -214,7 +235,8 @@ async def upload_file(file: UploadFile = File(...), type: str = Form("type"), qu
     db.add(generated_test)
     db.commit()
 
-    return output
+    # return output
+    return {"file-information": text}
 
 
 
