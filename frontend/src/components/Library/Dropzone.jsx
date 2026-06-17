@@ -100,6 +100,7 @@ export default function Dropzone({ onAddFiles }) {
           ref={inputRef}
           type="file"
           multiple
+          accept=".pdf,.docx,.txt,.md,.pptx,.png,.jpg,.jpeg,.webp"
           style={{ display: 'none' }}
           onChange={(e) => {
             if (e.target.files?.length) {

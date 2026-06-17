@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import tempfile
 import io 
 import pypdf 
+import base64
 from typing import Annotated 
 from starlette import status 
 from fastapi import FastAPI, UploadFile, File, Form, Depends
@@ -43,7 +44,14 @@ app.add_middleware(
 )
 
 def extract_file_information(file): 
-
+    content_type = file.content_type or ""
+    file_type = content_type.split('/')[-1] if '/' in content_type else file.filename.split('.')[-1]
+    
+    if file_type in ['png', 'jpg', 'jpeg', 'webp']:
+        file_bytes = file.file.read()
+        base64_encoded = base64.b64encode(file_bytes).decode("utf-8")
+        return f"data:image/{file_type};base64,{base64_encoded}"
+    
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
         temp_file.write(file.file.read())
         temp_path = temp_file.name
@@ -67,12 +75,18 @@ def extract_file_information(file):
 
 @app.post("/upload")
 # async funtion that must take a file 
-async def upload_file(files: list[UploadFile] = File(...), type: str = Form("type"), questions: int = Form("questions"), name: str = Form("name"), db: Session = Depends(get_db)):
+async def upload_file(files: list[UploadFile] = File(...), type: str = Form("type"), 
+                      questions: int = Form("questions"), name: str = Form("name"), 
+                      db: Session = Depends(get_db), difficulty: str = Form("difficulty")):
     # variable to hold the text from all files 
     text = ""
+    # variable to hold image contents
+    image_contents = []
     for file in files:
         extracted = extract_file_information(file)
-        text += extracted
+        if extracted.startswith("data:image/"):
+            image_contents.append({"type": "image_url", "image_url": {"url": extracted}})
+        text += extracted + "\n"
     
     # defines base llm for langchain 
     base_llm = ChatGoogleGenerativeAI(
@@ -90,19 +104,21 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
         system_prompt = SystemMessagePromptTemplate.from_template(
             """
                 You are a helpful assistant designed to help students study for an exam with ranging topics.
-                A PDF File, or multiple PDF files, will be uploaded, as well as the number of questions the student
-                wishes for the exam to be. The PDF file will be in text format, already parsed with Python PYPDF, some
+                A PDF File, multiple PDF files, or images will be uploaded, as well as the number of questions the student
+                wishes for the exam to be. The text file will be in text format, already parsed, some
                 words may be jumbled, use best context to figure out the problems. When creating the exams follow
-                these exact steps denoted in backticks (``)
+                these exact steps denoted in backticks (``). If images are provided, there may not be any pdf
+                context, in which case use the information from the images. Images will be provided in a list if
+                they are uploaded.
 
                 `
-                    - Fully digest and read every line of the uploaded text content (from PDF)
+                    - Fully digest and read every line of the uploaded text content (from PDF) or image
                     - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
                     - Determine the exact number of questions the user specified 
                      - If the multiple choice questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
                     text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
                     to be displayed as they should be 
-                    - Create multiple choice exam questions relating to specific problems, or topics from the PDF text 
+                    - Create multiple choice exam questions relating to specific problems, or topics from the PDF text of difficulty {difficulty}, explicitly follow this difficulty level
                     - Create 4 different choices to choose from for each problem, making sure they are all valid in problem context 
                     - After creating the exam questions, double check they are solveable 
                     - After creating the exam questions, double check they are of the same type and difficulty
@@ -117,24 +133,27 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
                     - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
                 `
-            """
+            """,
+            input_variables=['difficulty']
         )
     elif type == 'Short answer':
         print("Short Answer")
         system_prompt = SystemMessagePromptTemplate.from_template(
             """
                 You are a helpful assistant designed to help students study for an exam with ranging topics.
-                A PDF File, or multiple PDF files, will be uploaded, as well as the number of questions the student
-                wishes for the exam to be. The PDF file will be in text format, already parsed with Python PYPDF, some
+                A PDF File, multiple PDF files, or images will be uploaded, as well as the number of questions the student
+                wishes for the exam to be. The text file will be in text format, already parsed, some
                 words may be jumbled, use best context to figure out the problems. When creating the exams follow
-                these exact steps denoted in backticks (``)
+                these exact steps denoted in backticks (``). If images are provided, there may not be any pdf
+                context, in which case use the information from the images. Images will be provided in a list if
+                they are uploaded.
 
                 `
-                    - Fully digest and read every line of the uploaded text content (from PDF)
+                    - Fully digest and read every line of the uploaded text content (from PDF), or image 
                     - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
                     - Determine the exact number of questions the user specified 
                     - Determine the topic of the exam
-                    - Create short answer exam questions relating to specific problems, or topics from the PDF text
+                    - Create short answer exam questions relating to specific problems, or topics from the PDF text of difficulty {difficulty}
                     - If the short answer questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
                     text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
                     to be displayed as they should be 
@@ -150,27 +169,30 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
                    - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
                 `
-            """
+            """,
+            input_variables=['difficulty']
         )
     elif type == 'Mixed format':
         print("Mixed Format")
         system_prompt = SystemMessagePromptTemplate.from_template(
             """
                 You are a helpful assistant designed to help students study for an exam with ranging topics.
-                A PDF File, or multiple PDF files, will be uploaded, as well as the number of questions the student
-                wishes for the exam to be. The PDF file will be in text format, already parsed with Python PYPDF, some
+                A PDF File, multiple PDF files, or images will be uploaded, as well as the number of questions the student
+                wishes for the exam to be. The text file will be in text format, already parsed, some
                 words may be jumbled, use best context to figure out the problems. When creating the exams follow
-                these exact steps denoted in backticks (``)
+                these exact steps denoted in backticks (``). If images are provided, there may not be any pdf
+                context, in which case use the information from the images. Images will be provided in a list if
+                they are uploaded.
 
                 `
-                    - Fully digest and read every line of the uploaded text content (from PDF)
+                    - Fully digest and read every line of the uploaded text content (from PDF) or image
                     - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
                     - Determine the exact number of questions the user specified
                      - If the mixed format questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
                     text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
                     to be displayed as they should be  
                     - Create 1/4 of the specified amount as multiple choice exam questions, and 3/4
-                     as short answer questions, all relating to specific problems, or topics from the PDF text 
+                     as short answer questions, all relating to specific problems, or topics from the PDF text of difficulty {difficulty}
                     - Create 4 different choices to choose from for each multiple choice problem, making sure they are all valid in problem context 
                     - After creating the exam questions, double check they are solveable 
                     - After creating the exam questions, double check they are of the same type and difficulty
@@ -184,15 +206,25 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
                     - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value.
                     - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
-            """
+            """,
+            input_variables=['difficulty']
         )
 
-    # defines user prompt template for PDF contents to be injected, and number of questions 
+   # defines user prompt content
+    prompt_content = [
+        {
+            "type": "text",
+            "text": "Number of questions: {number},\nPrevious Class Context (follow difficulty and problems): {context}"
+        }
+    ]
+
+    # adds images to user prompt if they exist
+    if image_contents: 
+        prompt_content.extend(image_contents)
+
+    # creates human message prompt with all information 
     user_prompt = HumanMessagePromptTemplate.from_template(
-        """
-            Number of questions: {number},
-            Previous Class Context (follow difficulty and problems): {context}, 
-        """,
+        template=prompt_content,
         input_variables=['number', 'context']
     )
 
@@ -201,7 +233,7 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
 
     # creates chain to invoke LLM 
     chain = (
-        {"number": lambda x: x["number"], "context": lambda x: x["context"]}
+        {"number": lambda x: x["number"], "context": lambda x: x["context"], "difficulty": lambda x: x["difficulty"]}
         | prompt
         | llm
         | {
@@ -216,7 +248,7 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
     )
 
     # returns the output 
-    output = chain.invoke({"number": questions, "context": text})
+    output = chain.invoke({"number": questions, "context": text, "difficulty": difficulty})
 
     # creates generated test model 
     generated_test = models.GeneratedTests(
@@ -235,8 +267,7 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
     db.add(generated_test)
     db.commit()
 
-    # return output
-    return {"file-information": text}
+    return output
 
 
 

@@ -1,9 +1,7 @@
 import Dropzone from './Dropzone'
 import GenerateStrip from './GenerateStrip'
 import UploadsTable from './UploadsTable'
-import { useState, useEffect } from 'react';
-import { getGeneratedTests } from '../../services/api';
-
+import { useState, useRef } from 'react';
 export default function LibraryPage({
   files,
   setFiles,
@@ -14,17 +12,7 @@ export default function LibraryPage({
   resetTest,
 }) {
   const [formData, setFormData] = useState();
-  const [tests, setTests] = useState([]);
-
-  useEffect(() => {
-    getGeneratedTests().then((data) => {
-      if (Array.isArray(data)) setTests(data);
-    });
-  }, []);
-
-  async function uploadFile(file) {
-    setFiles([...file]);
-  }
+  const fileObjectsRef = useRef([]);
 
   function handleAddFiles(fileList) {
     const newEntries = Array.from(fileList).map((file) => ({
@@ -36,10 +24,33 @@ export default function LibraryPage({
       timestamp: new Date(),
     }))
     setFiles((prev) => [...prev, ...newEntries])
-    Array.from(fileList).forEach((file, i) => uploadFile(file, newEntries[i].id))
+    fileObjectsRef.current = [...fileObjectsRef.current, ...Array.from(fileList)]
     const data = new FormData();
-    data.append('files', files);
-    setFormData(data); 
+    fileObjectsRef.current.forEach((file) => data.append('files', file));
+    setFormData(data);
+  }
+
+  function handleRemoveFile(id) {
+    setFiles((prev) => {
+      const idx = prev.findIndex((f) => f.id === id)
+      if (idx !== -1) {
+        fileObjectsRef.current = fileObjectsRef.current.filter((_, i) => i !== idx)
+        if (fileObjectsRef.current.length > 0) {
+          const data = new FormData()
+          fileObjectsRef.current.forEach((f) => data.append('files', f))
+          setFormData(data)
+        } else {
+          setFormData(null)
+        }
+      }
+      return prev.filter((f) => f.id !== id)
+    })
+  }
+
+  function handleGenerated() {
+    setFiles([])
+    setFormData(null)
+    fileObjectsRef.current = []
   }
 
   return (
@@ -103,7 +114,7 @@ export default function LibraryPage({
               marginBottom: 0,
             }}
           >
-            Supported: PDF, DOCX, TXT, MD, PPTX
+            Supported: PDF, DOCX, TXT, MD, PPTX, PNG, JPG, JPEG, WEBP
           </p>
         </div>
 
@@ -117,7 +128,7 @@ export default function LibraryPage({
         {/* Uploads table — replaces dropzone once files are added */}
         {files.length > 0 && (
           <div style={{ marginBottom: '18px' }}>
-            <UploadsTable files={files} setFiles={setFiles} onAddFiles={handleAddFiles} tests={tests} setTests={setTests} />
+            <UploadsTable files={files} onAddFiles={handleAddFiles} onRemoveFile={handleRemoveFile} />
           </div>
         )}
 
@@ -131,6 +142,7 @@ export default function LibraryPage({
             questions={questions}
             resetTest={resetTest}
             formData={formData}
+            onGenerated={handleGenerated}
           />
         </div>
       </div>

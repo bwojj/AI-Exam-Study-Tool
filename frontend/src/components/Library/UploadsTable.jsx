@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef } from 'react'
 import { Icon } from '../Icons'
 
 function StatusPill({ status }) {
@@ -54,43 +54,15 @@ function StatusPill({ status }) {
   )
 }
 
-function TestRow({ test, setTests }) {
-  const [hovered, setHovered] = useState(false)
-  const [menuPos, setMenuPos] = useState(null)
-  const menuRef = useRef(null)
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
-  useEffect(() => {
-    if (!menuPos) return
-    function onOutsideClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuPos(null)
-    }
-    document.addEventListener('mousedown', onOutsideClick)
-    return () => document.removeEventListener('mousedown', onOutsideClick)
-  }, [menuPos])
-
-  function handleMenuToggle(e) {
-    if (menuPos) {
-      setMenuPos(null)
-    } else {
-      const rect = e.currentTarget.getBoundingClientRect()
-      setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
-    }
-  }
-
-  function handleRemove() {
-    setTests((prev) => prev.filter((t) => t.id !== test.id))
-    setMenuPos(null)
-  }
-
+function FileRow({ file, onRemoveFile }) {
   return (
-    <tr
-      style={{
-        background: hovered ? 'oklch(24% 0.016 240)' : 'transparent',
-        transition: 'background 0.1s ease',
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <tr>
       {/* Name */}
       <td
         style={{
@@ -102,11 +74,11 @@ function TestRow({ test, setTests }) {
       >
         <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'center' }}>
           <Icon.File size={14} color="var(--muted)" />
-          <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{test.name || 'Untitled'}</span>
+          <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{file.name}</span>
         </div>
       </td>
 
-      {/* Questions */}
+      {/* Size */}
       <td
         style={{
           padding: '12px 20px',
@@ -115,7 +87,19 @@ function TestRow({ test, setTests }) {
           borderBottom: '1px solid var(--hairline)',
         }}
       >
-        {test.number_of_questions}
+        {formatSize(file.size)}
+      </td>
+
+      {/* Type */}
+      <td
+        style={{
+          padding: '12px 20px',
+          fontSize: '13.5px',
+          color: 'var(--ink-2)',
+          borderBottom: '1px solid var(--hairline)',
+        }}
+      >
+        {file.type}
       </td>
 
       {/* Status */}
@@ -127,95 +111,49 @@ function TestRow({ test, setTests }) {
           borderBottom: '1px solid var(--hairline)',
         }}
       >
-        <StatusPill status="analyzed" />
+        <StatusPill status="queued" />
       </td>
 
-      {/* Date */}
+      {/* Remove */}
       <td
         style={{
           padding: '12px 20px',
-          fontSize: '13.5px',
-          color: 'var(--ink-2)',
           borderBottom: '1px solid var(--hairline)',
         }}
       >
-        {test.date ? new Date(test.date).toLocaleDateString() : '—'}
-      </td>
-
-      {/* Actions */}
-      <td
-        style={{
-          padding: '12px 20px',
-          fontSize: '13.5px',
-          color: 'var(--ink-2)',
-          borderBottom: '1px solid var(--hairline)',
-        }}
-      >
-        <div style={{ display: 'inline-block' }}>
-          <button
-            onClick={handleMenuToggle}
-            style={{
-              width: '28px',
-              height: '28px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 'var(--r-sm)',
-              border: '1px solid var(--hairline)',
-              background: menuPos ? 'var(--surface-2)' : 'transparent',
-              color: 'var(--muted)',
-              cursor: 'pointer',
-            }}
-          >
-            <Icon.More size={14} />
-          </button>
-
-          {menuPos && (
-            <div
-              ref={menuRef}
-              style={{
-                position: 'fixed',
-                top: menuPos.top,
-                right: menuPos.right,
-                background: 'var(--surface)',
-                border: '1px solid var(--hairline-strong)',
-                borderRadius: 'var(--r-md)',
-                boxShadow: '0 8px 24px oklch(0% 0 0 / 0.3)',
-                minWidth: '140px',
-                zIndex: 200,
-                overflow: 'hidden',
-              }}
-            >
-              <button
-                onClick={handleRemove}
-                style={{
-                  width: '100%',
-                  padding: '9px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'oklch(65% 0.2 25)',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'oklch(65% 0.2 25 / 0.08)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <Icon.Trash size={13} />
-                Remove
-              </button>
-            </div>
-          )}
-        </div>
+        <button
+          onClick={() => onRemoveFile(file.id)}
+          style={{
+            width: '28px',
+            height: '28px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 'var(--r-sm)',
+            border: '1px solid transparent',
+            background: 'transparent',
+            color: 'var(--muted)',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'oklch(65% 0.2 25)'
+            e.currentTarget.style.background = 'oklch(65% 0.2 25 / 0.08)'
+            e.currentTarget.style.borderColor = 'oklch(65% 0.2 25 / 0.2)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--muted)'
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.borderColor = 'transparent'
+          }}
+        >
+          <Icon.Trash size={13} />
+        </button>
       </td>
     </tr>
   )
 }
 
-export default function UploadsTable({ onAddFiles, tests = [], setTests }) {
+export default function UploadsTable({ files = [], onAddFiles, onRemoveFile }) {
   const addInputRef = useRef(null)
 
   return (
@@ -239,7 +177,7 @@ export default function UploadsTable({ onAddFiles, tests = [], setTests }) {
         }}
       >
         <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--ink)' }}>
-          Recent uploads
+          Selected files
         </span>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -267,6 +205,7 @@ export default function UploadsTable({ onAddFiles, tests = [], setTests }) {
             ref={addInputRef}
             type="file"
             multiple
+            accept=".pdf,.docx,.txt,.md,.pptx,.png,.jpg,.jpeg,.webp"
             style={{ display: 'none' }}
             onChange={(e) => {
               if (e.target.files?.length) {
@@ -275,42 +214,6 @@ export default function UploadsTable({ onAddFiles, tests = [], setTests }) {
               }
             }}
           />
-
-          {/* Filter button */}
-          <button
-            style={{
-              width: '30px',
-              height: '30px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid var(--hairline)',
-              borderRadius: 'var(--r-sm)',
-              background: 'transparent',
-              color: 'var(--muted)',
-              cursor: 'pointer',
-            }}
-          >
-            <Icon.Filter size={14} />
-          </button>
-
-          {/* Refresh button */}
-          <button
-            style={{
-              width: '30px',
-              height: '30px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid var(--hairline)',
-              borderRadius: 'var(--r-sm)',
-              background: 'transparent',
-              color: 'var(--muted)',
-              cursor: 'pointer',
-            }}
-          >
-            <Icon.Refresh size={14} />
-          </button>
         </div>
       </div>
 
@@ -318,7 +221,7 @@ export default function UploadsTable({ onAddFiles, tests = [], setTests }) {
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ background: 'var(--bg-2)' }}>
-            {['Name', 'Questions', 'Status', 'Date', ''].map((col) => (
+            {['Name', 'Size', 'Type', 'Status', ''].map((col) => (
               <th
                 key={col}
                 style={{
@@ -339,7 +242,7 @@ export default function UploadsTable({ onAddFiles, tests = [], setTests }) {
         </thead>
 
         <tbody>
-          {tests.length === 0 ? (
+          {files.length === 0 ? (
             <tr>
               <td
                 colSpan={5}
@@ -348,31 +251,20 @@ export default function UploadsTable({ onAddFiles, tests = [], setTests }) {
                   textAlign: 'center',
                 }}
               >
-                <div
+                <p
                   style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0',
+                    fontSize: '13.5px',
+                    color: 'var(--muted)',
+                    margin: 0,
                   }}
                 >
-                  <Icon.Empty size={32} color="var(--faint)" />
-                  <p
-                    style={{
-                      fontSize: '13.5px',
-                      color: 'var(--muted)',
-                      marginTop: '10px',
-                      marginBottom: 0,
-                    }}
-                  >
-                    No tests generated yet
-                  </p>
-                </div>
+                  No files selected
+                </p>
               </td>
             </tr>
           ) : (
-            tests.map((test) => (
-              <TestRow key={test.id} test={test} setTests={setTests} />
+            files.map((file) => (
+              <FileRow key={file.id} file={file} onRemoveFile={onRemoveFile} />
             ))
           )}
         </tbody>

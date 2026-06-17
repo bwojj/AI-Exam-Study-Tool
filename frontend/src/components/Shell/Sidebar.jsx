@@ -1,35 +1,20 @@
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Icon } from '../Icons'
+import { getGeneratedTests } from '../../services/api'
 
 const NAV = [
   { label: 'Library', icon: Icon.Folder, path: '/' },
-  { label: 'Practice', icon: Icon.Beaker, path: '/practice' },
-  { label: 'Settings', icon: Icon.Gear, path: '/settings' },
+  { label: 'History', icon: Icon.Clock, path: '/practice' },
 ]
-
-function ProgressBar({ label, value }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>{label}</span>
-        <span style={{ fontSize: 11.5, fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>{value}%</span>
-      </div>
-      <div style={{ height: 4, borderRadius: 99, background: 'var(--bg)', overflow: 'hidden' }}>
-        <div style={{
-          height: '100%',
-          width: `${value}%`,
-          borderRadius: 99,
-          background: 'var(--accent)',
-          transition: 'width 0.35s cubic-bezier(.3,.7,.4,1)',
-        }} />
-      </div>
-    </div>
-  )
-}
 
 export default function Sidebar() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const [testCount, setTestCount] = useState(0)
+  useEffect(() => {
+    getGeneratedTests().then(data => { if (Array.isArray(data)) setTestCount(data.length) })
+  }, [])
 
   return (
     <aside style={{
@@ -91,13 +76,25 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Study Stats */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>
-          Study Stats
-        </span>
-        <ProgressBar label="Accuracy" value={72} />
-        <ProgressBar label="Completion" value={45} />
+      {/* Test Count */}
+      <div style={{
+        padding: '12px 14px',
+        borderRadius: 'var(--r-md)',
+        border: '1px solid var(--hairline)',
+        background: 'var(--bg)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>
+            Tests Generated
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--ink)', fontFamily: 'var(--font-mono)', lineHeight: 1.15, marginTop: 4 }}>
+            {testCount}
+          </div>
+        </div>
+        <Icon.Sparkles size={20} color="var(--accent)" strokeWidth={1.5} />
       </div>
 
       {/* User card */}

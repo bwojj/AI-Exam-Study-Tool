@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Icon } from '../Icons'
 import { getReviewGuide } from '../../services/api'
 
-export default function GenerateStrip({ files, generateConfig, setGenerateConfig, setQuestions, resetTest, formData }) {
+export default function GenerateStrip({ files, generateConfig, setGenerateConfig, setQuestions, resetTest, formData, onGenerated }) {
   const navigate = useNavigate()
   const analyzedCount = files.filter((f) => f.status === 'analyzed').length
   const isEnabled = files.filter((f) => f.status !== 'error').length > 0
@@ -12,15 +12,16 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
     resetTest()
 
     if (formData){
-      formData.append("type", generateConfig.style); 
-      formData.append("questions", generateConfig.count);
-      formData.append("name", generateConfig.name); 
+      formData.set("type", generateConfig.style);
+      formData.set("questions", generateConfig.count);
+      formData.set("name", generateConfig.name);
+      formData.set("difficulty", generateConfig.difficulty);
     }
     // gets question and answer data
-    const data = await getReviewGuide(formData); 
-    console.log(data); 
+    const data = await getReviewGuide(formData);
+    console.log(data);
 
-    
+
     const newQuestions = Object.entries(data.questions).map(([key, value]) => ({
       id: key,
       question: value,
@@ -76,6 +77,7 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
       },
     ]) */ 
     navigate('/test')
+    onGenerated?.()
   }
 
   return (

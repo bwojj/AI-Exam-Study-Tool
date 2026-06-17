@@ -25,6 +25,7 @@ import {
   Eye,
   EyeOff,
   Shield,
+  Clock,
 } from 'lucide-react'
 
 function GoogleIcon(props) {
@@ -65,5 +66,6 @@ export const Icon = {
   Eye,
   EyeOff,
   Shield,
+  Clock,
   Google: GoogleIcon,
 }
