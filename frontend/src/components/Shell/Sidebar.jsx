@@ -1,7 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Icon } from '../Icons'
+import Logo from '../Logo'
 import { getGeneratedTests } from '../../services/api'
+import { getSession } from '../../services/authStore'
+
+function getUsername() {
+  const session = getSession()
+  if (!session?.access_token) return null
+  try {
+    const payload = JSON.parse(atob(session.access_token.split('.')[1]))
+    return payload.sub ?? null
+  } catch {
+    return null
+  }
+}
 
 const NAV = [
   { label: 'Library', icon: Icon.Folder, path: '/' },
@@ -12,8 +25,16 @@ export default function Sidebar() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [testCount, setTestCount] = useState(0)
+  const username = getUsername()
+  const initial = (username?.[0] ?? 'U').toUpperCase()
+
   useEffect(() => {
-    getGeneratedTests().then(data => { if (Array.isArray(data)) setTestCount(data.length) })
+    function refreshCount() {
+      getGeneratedTests().then(data => { if (Array.isArray(data)) setTestCount(data.length) })
+    }
+    refreshCount()
+    window.addEventListener('praxis:test-generated', refreshCount)
+    return () => window.removeEventListener('praxis:test-generated', refreshCount)
   }, [])
 
   return (
@@ -27,24 +48,7 @@ export default function Sidebar() {
       overflow: 'hidden',
     }}>
       {/* Brand */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 34,
-          height: 34,
-          borderRadius: 8,
-          background: 'var(--accent)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 16, color: 'var(--accent-ink)' }}>P</span>
-        </div>
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 15, letterSpacing: '-0.02em', color: 'var(--ink)' }}>Praxis</div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.01em' }}>Exam Engine</div>
-        </div>
-      </div>
+      <Logo size={34} showWordmark={true} />
 
       {/* Nav */}
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -122,11 +126,11 @@ export default function Sidebar() {
           color: 'var(--accent)',
           flexShrink: 0,
         }}>
-          B
+          {initial}
         </div>
         <div style={{ overflow: 'hidden' }}>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Blake
+            {username ?? 'User'}
           </div>
           <div style={{ fontSize: 11, color: 'var(--muted)' }}>Student</div>
         </div>

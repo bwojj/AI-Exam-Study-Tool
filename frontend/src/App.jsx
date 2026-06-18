@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AppShell from './components/Shell/AppShell'
 import LibraryPage from './components/Library/LibraryPage'
 import TestPage from './components/Test/TestPage'
 import PracticePage from './components/Practice/PracticePage'
 import AuthPage from './components/Auth/AuthPage'
-import { getSession } from './services/authStore'
+import { getSession, clearSession } from './services/authStore'
 
 export default function App() {
   const [authed, setAuthed] = useState(() => !!getSession())
@@ -22,6 +22,15 @@ export default function App() {
   const [current, setCurrent] = useState(0)
   const [finished, setFinished] = useState(false)
 
+  useEffect(() => {
+    function handleUnauthorized() {
+      clearSession()
+      setAuthed(false)
+    }
+    window.addEventListener('praxis:unauthorized', handleUnauthorized)
+    return () => window.removeEventListener('praxis:unauthorized', handleUnauthorized)
+  }, [])
+
   function resetTest() {
     setAnswers({})
     setFlags({})
@@ -34,7 +43,7 @@ export default function App() {
   }
 
   return (
-    <AppShell>
+    <AppShell onLogout={() => { clearSession(); setAuthed(false) }}>
       <Routes>
         <Route
           path="/"

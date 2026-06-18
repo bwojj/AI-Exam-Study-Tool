@@ -43,6 +43,8 @@ app.add_middleware(
     allow_headers=["*"],              
 )
 
+user_dependency = Annotated[dict, Depends(get_current_user)]
+
 def extract_file_information(file): 
     content_type = file.content_type or ""
     file_type = content_type.split('/')[-1] if '/' in content_type else file.filename.split('.')[-1]
@@ -75,7 +77,8 @@ def extract_file_information(file):
 
 @app.post("/upload")
 # async funtion that must take a file 
-async def upload_file(files: list[UploadFile] = File(...), type: str = Form("type"), 
+async def upload_file(user: user_dependency, 
+                      files: list[UploadFile] = File(...), type: str = Form("type"), 
                       questions: int = Form("questions"), name: str = Form("name"), 
                       db: Session = Depends(get_db), difficulty: str = Form("difficulty")):
     # variable to hold the text from all files 
@@ -250,6 +253,8 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
     # returns the output 
     output = chain.invoke({"number": questions, "context": text, "difficulty": difficulty})
 
+    db_user = db.query(models.User).filter(models.User.id == user["id"]).first()
+
     # creates generated test model 
     generated_test = models.GeneratedTests(
         name = name, 
@@ -261,7 +266,8 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
         body = output["body"],
         explanation = output["explanation"], 
         topic = output["topic"], 
-        containsMarkdown = output["containsMarkdown"]
+        containsMarkdown = output["containsMarkdown"],
+        owner = db_user, 
     )
     # saves and commits to database
     db.add(generated_test)
@@ -272,12 +278,12 @@ async def upload_file(files: list[UploadFile] = File(...), type: str = Form("typ
 
 
 @app.get("/tests")
-def get_all_tests(db: Session = Depends(get_db)):
+def get_all_tests(user: user_dependency, db: Session = Depends(get_db)):
     # Fetch every row from the GeneratedTests table
-    tests = db.query(models.GeneratedTests).all()
+    tests = db.query(models.GeneratedTests).filter(models.GeneratedTests.user == user["id"]).all()
     return tests
 
-user_dependency = Annotated[dict, Depends(get_current_user)]
+
 
 @app.get("/", status_code=status.HTTP_200_OK)
 async def user(user: user_dependency, db: get_db):

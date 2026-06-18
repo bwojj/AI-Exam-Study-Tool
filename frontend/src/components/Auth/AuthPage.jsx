@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '../Icons'
+import Logo from '../Logo'
 import { signIn, signUp } from '../../services/api'
 import { setSession } from '../../services/authStore'
 import './auth.css'
-
-const BASE = 'http://127.0.0.1:8000'
 
 const FEATURES = [
   { t: 'Upload any source material', d: 'PDFs, notes, slide decks — the engine reads them all.' },
@@ -27,15 +26,12 @@ export default function AuthPage({ onAuthed }) {
   const [mode, setMode] = useState('signin') // 'signin' | 'signup'
   const isUp = mode === 'signup'
 
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [pw, setPw] = useState('')
   const [show, setShow] = useState(false)
   const [remember, setRemember] = useState(true)
-  const [agree, setAgree] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState({}) // { email?, password?, general? }
+  const [errors, setErrors] = useState({})
 
   const lvl = strengthOf(pw)
   const lvlText = ['Weak', 'Fair', 'Strong'][lvl] ?? ''
@@ -50,24 +46,20 @@ export default function AuthPage({ onAuthed }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (isUp && !agree) {
-      setErrors({ general: 'You must agree to the Terms & Privacy to continue.' })
-      return
-    }
     setLoading(true)
     setErrors({})
     try {
       const data = isUp
-        ? await signUp({ name, password: pw })
+        ? await signUp({ name: username, password: pw })
         : await signIn({ username, password: pw })
-      setSession(data, isUp ? true : remember)
+      setSession(data, remember)
       onAuthed()
     } catch (err) {
       const status = err?.status
       const detail = (err?.detail ?? '').toLowerCase()
       if (isUp) {
-        if (status === 409 || detail.includes('email') || detail.includes('exist')) {
-          setErrors({ email: 'An account with this email already exists.' })
+        if (status === 409 || detail.includes('exist')) {
+          setErrors({ general: 'An account with this username already exists.' })
         } else if (detail.includes('password') || detail.includes('weak')) {
           setErrors({ password: 'Password does not meet the requirements.' })
         } else {
@@ -85,22 +77,12 @@ export default function AuthPage({ onAuthed }) {
     }
   }
 
-  function handleGoogleSSO() {
-    window.location.href = `${BASE}/auth/google`
-  }
-
-  function handleForgot() {
-    navigate('/forgot-password')
-  }
-
   return (
     <div className="auth">
       {/* Left context panel */}
       <aside className="auth-aside">
         <div className="auth-brand">
-          <div className="brand-glyph" />
-          <div className="brand-name">Praxis</div>
-          <div className="tag">Exam Engine</div>
+          <Logo size={32} showWordmark={true} />
         </div>
 
         <div className="auth-pitch">
@@ -127,8 +109,6 @@ export default function AuthPage({ onAuthed }) {
 
         <div className="auth-foot">
           <Icon.Shield size={14} strokeWidth={1.6} />
-          <span>SOC 2 Type II</span>
-          <span className="sep">/</span>
           <span>Your sources stay private</span>
         </div>
       </aside>
@@ -166,86 +146,34 @@ export default function AuthPage({ onAuthed }) {
             </button>
           </div>
 
-          <div className="auth-sso">
-            <button type="button" className="sso-btn" onClick={handleGoogleSSO}>
-              <span className="glyph"><Icon.Google /></span>
-              Continue with Google
-            </button>
-          </div>
-
-          <div className="auth-or"><span>or with email</span></div>
-
           {errors.general && (
             <div className="auth-error" role="alert">{errors.general}</div>
           )}
 
           <form className="auth-form" onSubmit={handleSubmit}>
-            {isUp && (
-              <div className="field field-anim">
-                <label htmlFor="auth-name">Full name</label>
-                <div className="input-wrap">
-                  <span className="lead">
-                    <Icon.User size={17} strokeWidth={1.6} />
-                  </span>
-                  <input
-                    id="auth-name"
-                    type="text"
-                    placeholder="Ada Lovelace"
-                    autoComplete="name"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    required
-                  />
-                </div>
+            <div className="field">
+              <label htmlFor="auth-username">Username</label>
+              <div className="input-wrap">
+                <span className="lead">
+                  <Icon.User size={17} strokeWidth={1.6} />
+                </span>
+                <input
+                  id="auth-username"
+                  type="text"
+                  placeholder="Your username"
+                  autoComplete="username"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  required
+                />
               </div>
-            )}
-
-            {isUp ? (
-              <div className="field">
-                <label htmlFor="auth-email">Email</label>
-                <div className="input-wrap">
-                  <span className="lead">
-                    <Icon.Mail size={17} strokeWidth={1.6} />
-                  </span>
-                  <input
-                    id="auth-email"
-                    type="email"
-                    placeholder="you@institution.edu"
-                    autoComplete="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                {errors.email && (
-                  <div className="field-error" role="alert">{errors.email}</div>
-                )}
-              </div>
-            ) : (
-              <div className="field">
-                <label htmlFor="auth-username">Username</label>
-                <div className="input-wrap">
-                  <span className="lead">
-                    <Icon.User size={17} strokeWidth={1.6} />
-                  </span>
-                  <input
-                    id="auth-username"
-                    type="text"
-                    placeholder="Your username"
-                    autoComplete="username"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            )}
+            </div>
 
             <div className="field">
               <label htmlFor="auth-pw">
                 Password
                 {!isUp && (
-                  <button type="button" className="hint-link" onClick={handleForgot}>
+                  <button type="button" className="hint-link" onClick={() => navigate('/forgot-password')}>
                     Forgot?
                   </button>
                 )}
@@ -291,38 +219,21 @@ export default function AuthPage({ onAuthed }) {
             </div>
 
             <div className="auth-row">
-              {isUp ? (
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={agree}
-                    onChange={e => setAgree(e.target.checked)}
-                  />
-                  <span className="box"><Icon.Check size={13} strokeWidth={2.2} /></span>
-                  <span>
-                    I agree to the{' '}
-                    <a href="#" onClick={e => e.stopPropagation()}>Terms</a>
-                    {' '}&amp;{' '}
-                    <a href="#" onClick={e => e.stopPropagation()}>Privacy</a>
-                  </span>
-                </label>
-              ) : (
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={e => setRemember(e.target.checked)}
-                  />
-                  <span className="box"><Icon.Check size={13} strokeWidth={2.2} /></span>
-                  <span>Keep me signed in</span>
-                </label>
-              )}
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={e => setRemember(e.target.checked)}
+                />
+                <span className="box"><Icon.Check size={13} strokeWidth={2.2} /></span>
+                <span>Keep me signed in</span>
+              </label>
             </div>
 
             <button
               type="submit"
               className="auth-submit"
-              disabled={loading || (isUp && !agree)}
+              disabled={loading}
             >
               {loading
                 ? (isUp ? 'Creating account…' : 'Signing in…')
@@ -341,11 +252,6 @@ export default function AuthPage({ onAuthed }) {
                 <button type="button" onClick={() => switchMode('signup')}>Create an account</button>
               </>
             )}
-          </div>
-
-          <div className="auth-legal">
-            Protected by reCAPTCHA. Subject to the Praxis{' '}
-            <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
           </div>
         </div>
       </main>

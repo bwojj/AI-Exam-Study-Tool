@@ -1,36 +1,39 @@
 
-const BASE = 'http://127.0.0.1:8000'; 
+const BASE = 'http://127.0.0.1:8000';
 
+function onUnauthorized() {
+  window.dispatchEvent(new CustomEvent('praxis:unauthorized'))
+}
+
+function authHeaders() {
+  try {
+    const session = JSON.parse(localStorage.getItem('praxis_session') ?? sessionStorage.getItem('praxis_session'))
+    if (session?.access_token) return { Authorization: `Bearer ${session.access_token}` }
+  } catch {
+    return {}
+  }
+  return {}
+}
 
 export const getReviewGuide = async (formData) => {
-  try {
-    const response = await fetch(`${BASE}/upload`, {
-      method: 'POST',
-      body: formData, 
-    })
-    if(response.ok){
-      const data = await response.json(); 
-      return data
-    }
-    else {
-      throw new Error(`Server Error ${response.status}`);
-    }
-  } catch {
-    return Error(`Failed to upload`);
-  }
+  const response = await fetch(`${BASE}/upload`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: formData,
+  })
+  if (response.status === 401) { onUnauthorized(); return null }
+  if (!response.ok) throw new Error(`Server Error ${response.status}`)
+  return response.json()
 }
 
 export const getGeneratedTests = async () => {
-  try{
-    const response = await fetch(`${BASE}/tests`); 
-    if(response.ok) {
-      const data = await response.json();
-      return data; 
-    } else {
-      throw new Error(`Server Error ${response.status}`);
-    }
+  try {
+    const response = await fetch(`${BASE}/tests`, { headers: authHeaders() })
+    if (response.status === 401) { onUnauthorized(); return [] }
+    if (response.ok) return response.json()
+    throw new Error(`Server Error ${response.status}`)
   } catch {
-    return Error('Failed to get Tests');
+    return []
   }
 }
 
@@ -72,6 +75,17 @@ export const signUp = async ({ name, password }) => {
 // TODO: backend needs POST /generate
 // Request body: { fileIds: string[], count: number, difficulty: string, style: string }
 // Expected response: { questions: Array<{ id, topic, question, body, code?, choices: string[], correctIndex: number, explanation: string }> }
+export async function logout(token) {
+  try {
+    await fetch(`${BASE}/auth/logout`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+  } catch {
+    // best-effort — client clears session regardless
+  }
+}
+
 export async function generateTest({ fileIds, count, difficulty, style }) {
   const res = await fetch(`${BASE}/generate`, {
     method: 'POST',
