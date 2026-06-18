@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime
 from typing import Annotated 
 import bcrypt
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel 
 from sqlalchemy.orm import Session 
 from starlette import status 
@@ -10,6 +10,7 @@ from models import User
 from passlib.context import CryptContext 
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import jwt, JWTError 
+from slowapi.util import get_remote_address
 
 # inits router to add as an endpoint
 router = APIRouter(
@@ -103,3 +104,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
                             detail='Could not validate user. ')
+
+def get_user_id(request: Request) -> str: 
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return str(payload.get("id"))
+    except Exception: 
+        return get_remote_address(request)

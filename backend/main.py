@@ -6,7 +6,7 @@ import pypdf
 import base64
 from typing import Annotated 
 from starlette import status 
-from fastapi import FastAPI, UploadFile, File, Form, Depends
+from fastapi import FastAPI, UploadFile, File, Form, Depends, Request
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 from langchain_community.document_loaders import (
@@ -20,13 +20,25 @@ import models
 from schemas import ReviewGuide 
 from datetime import datetime
 import auth 
-from auth import get_current_user
+from auth import get_current_user, get_user_id
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 
 # creates the database tables, to be used 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 app.include_router(auth.router)
+
+user_dependency = Annotated[dict, Depends(get_current_user)]
+
+# initializes rate limiting 
+limiter = Limiter(key_func=get_user_id)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
 
 origins = [
     "http://localhost:5176",  
@@ -42,8 +54,6 @@ app.add_middleware(
     allow_methods=["*"],              
     allow_headers=["*"],              
 )
-
-user_dependency = Annotated[dict, Depends(get_current_user)]
 
 def extract_file_information(file): 
     content_type = file.content_type or ""
@@ -76,8 +86,9 @@ def extract_file_information(file):
             os.remove(temp_path)
 
 @app.post("/upload")
+@limiter.limit("20/hour") # adds 5 / minute rate limit
 # async funtion that must take a file 
-async def upload_file(user: user_dependency, 
+async def upload_file(request: Request, user: user_dependency, 
                       files: list[UploadFile] = File(...), type: str = Form("type"), 
                       questions: int = Form("questions"), name: str = Form("name"), 
                       db: Session = Depends(get_db), difficulty: str = Form("difficulty")):
@@ -278,7 +289,8 @@ async def upload_file(user: user_dependency,
 
 
 @app.get("/tests")
-def get_all_tests(user: user_dependency, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def get_all_tests(request: Request, user: user_dependency, db: Session = Depends(get_db)):
     # Fetch every row from the GeneratedTests table
     tests = db.query(models.GeneratedTests).filter(models.GeneratedTests.user == user["id"]).all()
     return tests
