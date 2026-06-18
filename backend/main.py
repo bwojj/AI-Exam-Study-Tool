@@ -123,7 +123,12 @@ async def upload_file(request: Request, user: user_dependency,
                 words may be jumbled, use best context to figure out the problems. When creating the exams follow
                 these exact steps denoted in backticks (``). If images are provided, there may not be any pdf
                 context, in which case use the information from the images. Images will be provided in a list if
-                they are uploaded.
+                they are uploaded. A difficulty will also be provided, as you can read and see below. The difficulty options are 
+                one of the following in increasing difficulty order: Mixed (mixture of all), Foundational, Advanced, and Exam Grade. Make the problems 
+                follow this difficulty no matter what. 
+
+                *IF problems CANNOT be generated from the inputted files (not enough information, not testable) return
+                a dictionary for questions exactly like this 0: "False"* 
 
                 `
                     - Fully digest and read every line of the uploaded text content (from PDF) or image
@@ -160,7 +165,12 @@ async def upload_file(request: Request, user: user_dependency,
                 words may be jumbled, use best context to figure out the problems. When creating the exams follow
                 these exact steps denoted in backticks (``). If images are provided, there may not be any pdf
                 context, in which case use the information from the images. Images will be provided in a list if
-                they are uploaded.
+                they are uploaded. A difficulty will also be provided, as you can read and see below. The difficulty options are 
+                one of the following in increasing difficulty order: Mixed (mixture of all), Foundational, Advanced, and Exam Grade. Make the problems 
+                follow this difficulty no matter what. 
+
+                *IF problems CANNOT be generated from the inputted files (not enough information, not testable) return
+                JUST the word False, NOTHING else* 
 
                 `
                     - Fully digest and read every line of the uploaded text content (from PDF), or image 
@@ -196,7 +206,12 @@ async def upload_file(request: Request, user: user_dependency,
                 words may be jumbled, use best context to figure out the problems. When creating the exams follow
                 these exact steps denoted in backticks (``). If images are provided, there may not be any pdf
                 context, in which case use the information from the images. Images will be provided in a list if
-                they are uploaded.
+                they are uploaded. A difficulty will also be provided, as you can read and see below. The difficulty options are 
+                one of the following in increasing difficulty order: Mixed (mixture of all), Foundational, Advanced, and Exam Grade. Make the problems 
+                follow this difficulty no matter what. 
+
+                *IF problems CANNOT be generated from the inputted files (not enough information, not testable) return
+                JUST the word False, NOTHING else* 
 
                 `
                     - Fully digest and read every line of the uploaded text content (from PDF) or image
@@ -265,6 +280,9 @@ async def upload_file(request: Request, user: user_dependency,
     output = chain.invoke({"number": questions, "context": text, "difficulty": difficulty})
 
     db_user = db.query(models.User).filter(models.User.id == user["id"]).first()
+
+    if output["questions"][0] == "False":
+        return {"Error": "Could not generate"} 
 
     # creates generated test model 
     generated_test = models.GeneratedTests(
