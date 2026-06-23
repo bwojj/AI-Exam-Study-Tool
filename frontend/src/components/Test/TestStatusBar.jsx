@@ -1,8 +1,9 @@
 import { Icon } from '../Icons'
 
-export default function TestStatusBar({ q, current, total, answers, flags, setFlags }) {
+export default function TestStatusBar({ q, current, total, answers, flags, setFlags, correctCount }) {
   const answered = Object.keys(answers).length
   const isFlagged = !!flags[q.id]
+  const scorePercent = total > 0 ? Math.round((correctCount / total) * 100) : 0
 
   return (
     <div
@@ -73,6 +74,33 @@ export default function TestStatusBar({ q, current, total, answers, flags, setFl
           </span>
           <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>
             {answered} of {total}
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: 1, background: 'var(--hairline)', margin: '0 4px' }} />
+
+        {/* Group 4: Score */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
+            padding: '0 20px',
+          }}
+        >
+          <span style={{ fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+            Score
+          </span>
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              fontFamily: 'var(--font-mono)',
+              color: correctCount > 0 ? 'var(--good)' : 'var(--ink)',
+            }}
+          >
+            {correctCount} / {total} · {scorePercent}%
           </span>
         </div>
       </div>

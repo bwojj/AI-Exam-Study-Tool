@@ -1,12 +1,16 @@
 import { useNavigate } from 'react-router-dom'
 
-export default function FinishScreen({ questions, answers, resetTest }) {
+export default function FinishScreen({ questions, answers, shortAnswerResults, resetTest }) {
   const navigate = useNavigate()
 
-  const correct = questions.filter(q => answers[q.id] === q.correctIndex).length
-  const incorrect = questions.filter(
-    q => answers[q.id] !== undefined && answers[q.id] !== q.correctIndex
-  ).length
+  const correct = questions.filter(q => {
+    if (q.type === 'short answer') return shortAnswerResults[q.id] === true
+    return answers[q.id] === q.correctIndex
+  }).length
+  const incorrect = questions.filter(q => {
+    if (q.type === 'short answer') return shortAnswerResults[q.id] === false
+    return answers[q.id] !== undefined && answers[q.id] !== q.correctIndex
+  }).length
   const skipped = questions.length - correct - incorrect
   const score = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0
 

@@ -10,6 +10,7 @@ export default function LibraryPage({
   questions,
   setQuestions,
   resetTest,
+  setTestId,
 }) {
   const [formData, setFormData] = useState();
   const fileObjectsRef = useRef([]);
@@ -143,6 +144,7 @@ export default function LibraryPage({
             resetTest={resetTest}
             formData={formData}
             onGenerated={handleGenerated}
+            setTestId={setTestId}
           />
         </div>
       </div>

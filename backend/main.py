@@ -1,28 +1,22 @@
 import os
 from dotenv import load_dotenv
-import tempfile
-import io 
-import pypdf 
-import base64
 from typing import Annotated 
 from starlette import status 
-from fastapi import FastAPI, UploadFile, File, Form, Depends, Request
+from fastapi import FastAPI, UploadFile, File, Form, Depends, Request, HTTPException
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
-from langchain_community.document_loaders import (
-    TextLoader, PyPDFLoader, Docx2txtLoader, UnstructuredPowerPointLoader
-)
-from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 from database import engine, Base, get_db
 import models
-from schemas import ReviewGuide 
+from schemas import ReviewGuide, CheckAnswer
 from datetime import datetime
 import auth 
 from auth import get_current_user, get_user_id
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from utilities import extract_file_information, check_binary_guardrails
 
 
 # creates the database tables, to be used 
@@ -34,9 +28,9 @@ app.include_router(auth.router)
 user_dependency = Annotated[dict, Depends(get_current_user)]
 
 # initializes rate limiting 
-limiter = Limiter(key_func=get_user_id)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# limiter = Limiter(key_func=get_user_id)
+# app.state.limiter = limiter
+# app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 
@@ -53,40 +47,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],              
     allow_headers=["*"],              
-)
-
-def extract_file_information(file): 
-    content_type = file.content_type or ""
-    file_type = content_type.split('/')[-1] if '/' in content_type else file.filename.split('.')[-1]
-    
-    if file_type in ['png', 'jpg', 'jpeg', 'webp']:
-        file_bytes = file.file.read()
-        base64_encoded = base64.b64encode(file_bytes).decode("utf-8")
-        return f"data:image/{file_type};base64,{base64_encoded}"
-    
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-        temp_file.write(file.file.read())
-        temp_path = temp_file.name
-    try: 
-        file_type = file.content_type.split('/')[1]
-        match file_type: 
-            case 'pdf':
-                loader = PyPDFLoader(temp_path)
-            case 'docx': 
-                loader = Docx2txtLoader(temp_path)
-            case 'pptx':
-                loader = UnstructuredPowerPointLoader(temp_path)
-            case 'txt':
-                loader = TextLoader(temp_path)
-        docs = loader.load()
-
-        return "\n".join([doc.page_content for doc in docs])
-    finally: 
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+) 
 
 @app.post("/upload")
-@limiter.limit("20/hour") # adds 5 / minute rate limit
+# @limiter.limit("20/hour") # adds 5 / minute rate limit
 # async funtion that must take a file 
 async def upload_file(request: Request, user: user_dependency, 
                       files: list[UploadFile] = File(...), type: str = Form("type"), 
@@ -125,7 +89,9 @@ async def upload_file(request: Request, user: user_dependency,
                 context, in which case use the information from the images. Images will be provided in a list if
                 they are uploaded. A difficulty will also be provided, as you can read and see below. The difficulty options are 
                 one of the following in increasing difficulty order: Mixed (mixture of all), Foundational, Advanced, and Exam Grade. Make the problems 
-                follow this difficulty no matter what. 
+                follow this difficulty no matter what. If the content is anything action-based (such as solving problems for math, coding,
+                physics, exc) include problems of practice and problems of theory as well, they why behind the topic (e.g, why are integrals
+                worked). 
 
                 *IF problems CANNOT be generated from the inputted files (not enough information, not testable) return
                 a dictionary for questions exactly like this 0: "False"* 
@@ -151,6 +117,7 @@ async def upload_file(request: Request, user: user_dependency,
                     - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topci as the value.
                     - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
+                    - For each problem, return the type of problem it is: multiple choice
                 `
             """,
             input_variables=['difficulty']
@@ -167,7 +134,9 @@ async def upload_file(request: Request, user: user_dependency,
                 context, in which case use the information from the images. Images will be provided in a list if
                 they are uploaded. A difficulty will also be provided, as you can read and see below. The difficulty options are 
                 one of the following in increasing difficulty order: Mixed (mixture of all), Foundational, Advanced, and Exam Grade. Make the problems 
-                follow this difficulty no matter what. 
+                follow this difficulty no matter what. If the content is anything action-based (such as solving problems for math, coding,
+                physics, exc) include problems of practice and problems of theory as well, they why behind the topic (e.g, why are integrals
+                worked).  
 
                 *IF problems CANNOT be generated from the inputted files (not enough information, not testable) return
                 JUST the word False, NOTHING else* 
@@ -192,6 +161,7 @@ async def upload_file(request: Request, user: user_dependency,
                    - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value.
                    - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
+                    - For each problem, return the type of problem it is: short answer
                 `
             """,
             input_variables=['difficulty']
@@ -208,7 +178,9 @@ async def upload_file(request: Request, user: user_dependency,
                 context, in which case use the information from the images. Images will be provided in a list if
                 they are uploaded. A difficulty will also be provided, as you can read and see below. The difficulty options are 
                 one of the following in increasing difficulty order: Mixed (mixture of all), Foundational, Advanced, and Exam Grade. Make the problems 
-                follow this difficulty no matter what. 
+                follow this difficulty no matter what. If the content is anything action-based (such as solving problems for math, coding,
+                physics, exc) include problems of practice and problems of theory as well, they why behind the topic (e.g, why are integrals
+                worked). 
 
                 *IF problems CANNOT be generated from the inputted files (not enough information, not testable) return
                 JUST the word False, NOTHING else* 
@@ -217,7 +189,7 @@ async def upload_file(request: Request, user: user_dependency,
                     - Fully digest and read every line of the uploaded text content (from PDF) or image
                     - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
                     - Determine the exact number of questions the user specified
-                     - If the mixed format questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
+                    - If the mixed format questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
                     text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
                     to be displayed as they should be  
                     - Create 1/4 of the specified amount as multiple choice exam questions, and 3/4
@@ -235,6 +207,7 @@ async def upload_file(request: Request, user: user_dependency,
                     - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value.
                     - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
+                    - For each problem, return the type of problem it is, whether it be short answer or multiple choice
             """,
             input_variables=['difficulty']
         )
@@ -273,15 +246,16 @@ async def upload_file(request: Request, user: user_dependency,
             "explanation": lambda x: x.explanation, 
             "topic": lambda x: x.topic,
             "containsMarkdown": lambda x: x.containsMarkdown, 
+            "type": lambda x: x.type
         }
     )
 
     # returns the output 
-    output = chain.invoke({"number": questions, "context": text, "difficulty": difficulty})
+    output = await chain.ainvoke({"number": questions, "context": text, "difficulty": difficulty})
 
     db_user = db.query(models.User).filter(models.User.id == user["id"]).first()
 
-    if output["questions"][0] == "False":
+    if len(output["questions"]) == 1:
         return {"Error": "Could not generate"} 
 
     # creates generated test model 
@@ -301,13 +275,15 @@ async def upload_file(request: Request, user: user_dependency,
     # saves and commits to database
     db.add(generated_test)
     db.commit()
+    db.refresh(generated_test)
 
+    output["test_id"] = generated_test.id
     return output
 
 
 
 @app.get("/tests")
-@limiter.limit("60/minute")
+# @limiter.limit("60/minute")
 def get_all_tests(request: Request, user: user_dependency, db: Session = Depends(get_db)):
     # Fetch every row from the GeneratedTests table
     tests = db.query(models.GeneratedTests).filter(models.GeneratedTests.user == user["id"]).all()
@@ -320,3 +296,97 @@ async def user(user: user_dependency, db: get_db):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
     return {"User": user}
+
+@app.post("/check-answer")
+# @limiter.limit("20/hour")
+async def check_answer(request: Request, user: user_dependency, db: Session = Depends(get_db),
+                       question: str = Form("question"), gen_answer: str = Form("gen_answer"),
+                       user_answer: str = Form("user_answer")):
+    
+
+    check_binary = check_binary_guardrails(user_answer, gen_answer)
+
+    if check_binary != None: 
+        return check_binary
+    
+    else:
+        # defines base llm for langchain 
+        base_llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash",
+            temperature=0.0,
+            google_api_key=os.environ.get("GOOGLE_API_KEY")
+        )
+
+        llm = base_llm.with_structured_output(CheckAnswer)
+
+        system_prompt = SystemMessagePromptTemplate.from_template(
+            """
+                You are an AI assistant located within an AI application that takes in files such as 
+                text-based, or image files, and generates practice exam questions and answers of ranging 
+                difficulties, for users to study from. 
+
+                Your specific task within this application is to take in a generated question, generated answer,
+                and user answer, to determine if the user's answer is correct.
+
+                You should output only two things, a JSON object in this format denoted in backticks: 
+                    
+                `
+                "Correct": True
+                `
+
+                or 
+
+                `
+                "Correct": False
+                `
+            """
+        )
+
+        user_prompt = HumanMessagePromptTemplate.from_template(
+            """
+                Question: {question},
+                Generated Answer: {gen_answer},
+                User Current Answer: {user_answer}
+            """, 
+            input_variables=["question", "gen_answer", "user_answer"]
+        )
+
+        prompt = ChatPromptTemplate.from_messages([system_prompt, user_prompt])
+
+        chain = (
+            {"question": lambda x: x["question"], "gen_answer": lambda x: x["gen_answer"], "user_answer": lambda x: x["user_answer"]}
+            | prompt
+            | llm 
+            | {
+                "Correct": lambda x: x.correct
+            }
+        )
+
+        output = await chain.ainvoke({"question": question, "gen_answer": gen_answer, "user_answer": user_answer})
+
+        return output
+
+@app.post("/update-answer")
+async def update_answer(user: user_dependency, db: Session = Depends(get_db),
+                        id: str = Form("id"), correct: bool = Form("correct"), 
+                        question: int = Form("question"), user_ans: int | str = Form("answer")):
+    test_to_update = db.query(models.GeneratedTests).filter(models.GeneratedTests.id == id).first()
+
+    if not test_to_update:
+        raise HTTPException(status_code=404, detail="Test not found")
+    
+    current_answers = test_to_update.userAnswers or []
+    current_answers.append({
+        "question_num": question, 
+        "answer": user_ans, 
+        "correct": correct
+    })
+
+    test_to_update.userAnswers = current_answers
+    flag_modified(test_to_update, "userAnswers")
+
+    db.commit()
+    db.refresh(test_to_update)
+
+    return True
+

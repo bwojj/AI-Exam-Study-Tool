@@ -26,6 +26,17 @@ export const getReviewGuide = async (formData) => {
   return response.json()
 }
 
+export const test = async (formData) => {
+  const response = await fetch(`${BASE}/upload`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: formData,
+  })
+  if (response.status === 401) { onUnauthorized(); return null }
+  if (!response.ok) throw new Error(`Server Error ${response.status}`)
+  return response.json()
+}
+
 export const getGeneratedTests = async () => {
   try {
     const response = await fetch(`${BASE}/tests`, { headers: authHeaders() })
@@ -94,4 +105,40 @@ export async function generateTest({ fileIds, count, difficulty, style }) {
   })
   if (!res.ok) throw new Error(`Generate failed: ${res.statusText}`)
   return res.json()
+}
+
+export async function checkAnswer({ question, gen_answer, user_answer }) {
+  const form = new FormData()
+  form.append('question', question)
+  form.append('gen_answer', gen_answer)
+  form.append('user_answer', user_answer)
+  const res = await fetch(`${BASE}/check-answer`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: form,
+  })
+  if (res.status === 401) { onUnauthorized(); return null }
+  if (!res.ok) throw new Error(`Check answer failed: ${res.statusText}`)
+  return res.json()
+}
+
+export async function updateAnswer({ testId, question, answer, correct }) {
+  const form = new FormData()
+  form.append('id', String(testId))
+  form.append('correct', correct)
+  form.append('question', question)
+  form.append('answer', answer)
+  const res = await fetch(`${BASE}/update-answer`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: form,
+  })
+  if (res.status === 401) onUnauthorized()
+}
+
+export function normalizeCheckAnswer(result) {
+  if (typeof result === 'string') return result === 'correct'
+  if (result && 'Correct' in result) return result.Correct
+  if (result && 'status' in result) return result.status === 'correct'
+  return false
 }

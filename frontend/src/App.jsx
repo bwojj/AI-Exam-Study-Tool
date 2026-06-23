@@ -17,10 +17,15 @@ export default function App() {
     name: '',
   })
   const [questions, setQuestions] = useState([])
-  const [answers, setAnswers] = useState({})   // { [questionId]: choiceIndex }
-  const [flags, setFlags] = useState({})        // { [questionId]: boolean }
+  const [answers, setAnswers] = useState({})             // { [questionId]: choiceIndex | string }
+  const [shortAnswerResults, setShortAnswerResults] = useState({}) // { [questionId]: boolean }
+  const [flags, setFlags] = useState({})                 // { [questionId]: boolean }
   const [current, setCurrent] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [testId, setTestId] = useState(null)
+  const [corrects, setCorrects] = useState({})           // { [questionId]: boolean }
+  const [reviewMode, setReviewMode] = useState(false)
+
 
   useEffect(() => {
     function handleUnauthorized() {
@@ -33,9 +38,13 @@ export default function App() {
 
   function resetTest() {
     setAnswers({})
+    setShortAnswerResults({})
     setFlags({})
     setCurrent(0)
     setFinished(false)
+    setTestId(null)
+    setCorrects({})
+    setReviewMode(false)
   }
 
   if (!authed) {
@@ -56,6 +65,7 @@ export default function App() {
               setQuestions={setQuestions}
               questions={questions}
               resetTest={resetTest}
+              setTestId={setTestId}
             />
           }
         />
@@ -66,6 +76,8 @@ export default function App() {
               questions={questions}
               answers={answers}
               setAnswers={setAnswers}
+              shortAnswerResults={shortAnswerResults}
+              setShortAnswerResults={setShortAnswerResults}
               flags={flags}
               setFlags={setFlags}
               current={current}
@@ -73,6 +85,10 @@ export default function App() {
               finished={finished}
               setFinished={setFinished}
               resetTest={resetTest}
+              testId={testId}
+              corrects={corrects}
+              setCorrects={setCorrects}
+              reviewMode={reviewMode}
             />
           }
         />
@@ -82,6 +98,11 @@ export default function App() {
             <PracticePage
               setQuestions={setQuestions}
               resetTest={resetTest}
+              setTestId={setTestId}
+              setAnswers={setAnswers}
+              setShortAnswerResults={setShortAnswerResults}
+              setCorrects={setCorrects}
+              setReviewMode={setReviewMode}
             />
           }
         />

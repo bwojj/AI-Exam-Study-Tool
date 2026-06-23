@@ -1,6 +1,6 @@
 import { Icon } from '../Icons'
 
-export default function Composer({ submitted, onSubmit, onNext, selectedIndex, isLastQuestion }) {
+export default function Composer({ submitted, onSubmit, onNext, canSubmit, isLastQuestion, checkingAnswer }) {
   return (
     <div
       style={{
@@ -47,20 +47,20 @@ export default function Composer({ submitted, onSubmit, onNext, selectedIndex, i
       {!submitted ? (
         <button
           onClick={onSubmit}
-          disabled={selectedIndex === null}
+          disabled={!canSubmit || checkingAnswer}
           style={{
             padding: '7px 16px',
             borderRadius: 'var(--r-md)',
             border: 'none',
-            background: selectedIndex !== null ? 'var(--accent)' : 'var(--hairline)',
-            color: selectedIndex !== null ? 'var(--accent-ink)' : 'var(--muted)',
+            background: canSubmit && !checkingAnswer ? 'var(--accent)' : 'var(--hairline)',
+            color: canSubmit && !checkingAnswer ? 'var(--accent-ink)' : 'var(--muted)',
             fontSize: 13,
             fontWeight: 600,
-            cursor: selectedIndex !== null ? 'pointer' : 'not-allowed',
+            cursor: canSubmit && !checkingAnswer ? 'pointer' : 'not-allowed',
             whiteSpace: 'nowrap',
           }}
         >
-          Submit Answer
+          {checkingAnswer ? 'Checking…' : 'Submit Answer'}
         </button>
       ) : (
         <button

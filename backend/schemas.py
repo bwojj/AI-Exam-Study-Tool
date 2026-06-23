@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 class UserBase(BaseModel): 
     username: str
@@ -14,3 +14,8 @@ class ReviewGuide(BaseModel):
     explanation: dict[int, str]
     topic: dict[int, str]
     containsMarkdown: dict[int, bool]
+    type: dict[int, str]
+
+# defines structued output class for check answer 
+class CheckAnswer(BaseModel): 
+    correct: bool

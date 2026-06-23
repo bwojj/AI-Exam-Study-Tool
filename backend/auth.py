@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from datetime import timedelta, datetime
 from typing import Annotated 
 import bcrypt
@@ -18,8 +20,10 @@ router = APIRouter(
     tags=['auth']
 )
 
-SECRET_KEY = 'jujutsu11' # secret key for auth access
-ALGORITHM = 'HS256' # algorithm for crypt
+load_dotenv()
+
+SECRET_KEY = os.environ.get("SECRET_KEY") # secret key for auth access
+ALGORITHM = os.environ.get("ALGORITHM") # algorithm for crypt
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()

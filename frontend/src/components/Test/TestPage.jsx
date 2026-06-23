@@ -5,11 +5,14 @@ import QuestionCard from './QuestionCard'
 import Composer from './Composer'
 import Pager from './Pager'
 import FinishScreen from './FinishScreen'
+import { checkAnswer, normalizeCheckAnswer, updateAnswer } from '../../services/api'
 
 export default function TestPage({
   questions,
   answers,
   setAnswers,
+  shortAnswerResults,
+  setShortAnswerResults,
   flags,
   setFlags,
   current,
@@ -17,11 +20,17 @@ export default function TestPage({
   finished,
   setFinished,
   resetTest,
+  testId,
+  corrects,
+  setCorrects,
+  reviewMode,
 }) {
   const [submitted, setSubmitted] = useState(false)
+  const [checkingAnswer, setCheckingAnswer] = useState(false)
 
   useEffect(() => {
     setSubmitted(false)
+    setCheckingAnswer(false)
   }, [current])
 
   if (questions.length === 0) {
@@ -48,24 +57,64 @@ export default function TestPage({
       <FinishScreen
         questions={questions}
         answers={answers}
+        shortAnswerResults={shortAnswerResults}
         resetTest={resetTest}
       />
     )
   }
 
   const q = questions[current]
-  const selectedIndex = answers[q.id] ?? null
+  const isShortAnswer = q.type === 'short answer'
+  const selectedIndex = isShortAnswer ? null : (answers[q.id] ?? null)
+  const userAnswerText = isShortAnswer ? (answers[q.id] ?? '') : ''
   const isLastQuestion = current === questions.length - 1
+  const canSubmit = isShortAnswer
+    ? userAnswerText.trim().length > 0
+    : selectedIndex !== null
+
+  const hasStoredAnswer = q.id in corrects
+  const effectiveSubmitted = submitted || (reviewMode && hasStoredAnswer)
+
+  const correctCount = Object.values(corrects).filter(Boolean).length
 
   function onSelect(idx) {
-    if (!submitted) {
+    if (!effectiveSubmitted && !isShortAnswer) {
       setAnswers(prev => ({ ...prev, [q.id]: idx }))
     }
   }
 
-  function onSubmit() {
-    if (selectedIndex !== null) {
-      setSubmitted(true)
+  function onAnswerTextChange(text) {
+    if (!effectiveSubmitted) {
+      setAnswers(prev => ({ ...prev, [q.id]: text }))
+    }
+  }
+
+  async function onSubmit() {
+    if (isShortAnswer) {
+      const text = userAnswerText.trim()
+      if (!text) return
+      setCheckingAnswer(true)
+      try {
+        const raw = await checkAnswer({
+          question: q.question,
+          gen_answer: String(q.correctIndex),
+          user_answer: text,
+        })
+        const isCorrect = normalizeCheckAnswer(raw)
+        setShortAnswerResults(prev => ({ ...prev, [q.id]: isCorrect }))
+        setCorrects(prev => ({ ...prev, [q.id]: isCorrect }))
+        updateAnswer({ testId, question: q.id, answer: text, correct: isCorrect })
+        setSubmitted(true)
+      } finally {
+        setCheckingAnswer(false)
+      }
+    } else {
+      if (selectedIndex !== null) {
+        const isCorrect = selectedIndex === q.correctIndex
+        setCorrects(prev => ({ ...prev, [q.id]: isCorrect }))
+        updateAnswer({ testId, question: q.id, answer: selectedIndex, correct: isCorrect })
+        setSubmitted(true)
+      }
     }
   }
 
@@ -99,24 +148,31 @@ export default function TestPage({
         answers={answers}
         flags={flags}
         setFlags={setFlags}
+        correctCount={correctCount}
       />
       <QuestionCard
         q={q}
         selectedIndex={selectedIndex}
         onSelect={onSelect}
-        submitted={submitted}
+        submitted={effectiveSubmitted}
         answers={answers}
         onPrev={onPrev}
         onNext={onNext}
         current={current}
         total={questions.length}
+        isShortAnswer={isShortAnswer}
+        userAnswerText={userAnswerText}
+        onAnswerTextChange={onAnswerTextChange}
+        shortAnswerCorrect={shortAnswerResults[q.id] ?? null}
+        storedCorrect={q.id in corrects ? corrects[q.id] : null}
       />
       <Composer
-        submitted={submitted}
+        submitted={effectiveSubmitted}
         onSubmit={onSubmit}
         onNext={onNext}
-        selectedIndex={selectedIndex}
+        canSubmit={canSubmit}
         isLastQuestion={isLastQuestion}
+        checkingAnswer={checkingAnswer}
       />
       <Pager
         questions={questions}
@@ -124,6 +180,7 @@ export default function TestPage({
         setCurrent={setCurrent}
         answers={answers}
         flags={flags}
+        corrects={corrects}
       />
     </div>
   )

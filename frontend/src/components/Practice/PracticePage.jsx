@@ -19,10 +19,17 @@ function buildQuestions(test) {
     explanation: test.explanation[key],
     topic: test.topic[key],
     containsMarkdown: test.containsMarkdown[key],
+    type: test.type?.[key],
   }))
 }
 
 function TestRow({ test, onSelect }) {
+  const answeredCount = test.userAnswers?.length ?? 0
+  const correctCount = test.userAnswers?.filter(ua => ua.correct).length ?? 0
+  const total = test.number_of_questions
+  const scorePercent = total > 0 ? Math.round((correctCount / total) * 100) : 0
+  const hasScore = answeredCount > 0
+
   return (
     <button
       onClick={() => onSelect(test)}
@@ -56,13 +63,25 @@ function TestRow({ test, onSelect }) {
             {test.name || 'Untitled'}
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 16 }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
           <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>
             {formatDate(test.date)}
           </span>
           <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>
-            {test.number_of_questions} question{test.number_of_questions !== 1 ? 's' : ''}
+            {total} question{total !== 1 ? 's' : ''}
           </span>
+          {hasScore && (
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: scorePercent >= 70 ? 'var(--good)' : scorePercent >= 40 ? 'var(--warn)' : 'var(--danger)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              {correctCount} / {total} · {scorePercent}%
+            </span>
+          )}
         </div>
       </div>
       <Icon.ArrowRight size={16} color="var(--muted)" />
@@ -70,7 +89,15 @@ function TestRow({ test, onSelect }) {
   )
 }
 
-export default function PracticePage({ setQuestions, resetTest }) {
+export default function PracticePage({
+  setQuestions,
+  resetTest,
+  setTestId,
+  setAnswers,
+  setShortAnswerResults,
+  setCorrects,
+  setReviewMode,
+}) {
   const [tests, setTests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -90,6 +117,26 @@ export default function PracticePage({ setQuestions, resetTest }) {
   function handleSelect(test) {
     const questions = buildQuestions(test)
     resetTest()
+
+    const newAnswers = {}
+    const newSAResults = {}
+    const newCorrects = {}
+    test.userAnswers?.forEach(ua => {
+      const qId = String(ua.question_num)
+      const qType = test.type?.[ua.question_num]
+      // MC answers may be serialized as strings; coerce to number for strict equality with correctIndex
+      newAnswers[qId] = qType === 'short answer' ? ua.answer : Number(ua.answer)
+      if (qType === 'short answer') {
+        newSAResults[qId] = ua.correct
+      }
+      newCorrects[qId] = ua.correct
+    })
+
+    setTestId(test.id)
+    setAnswers(newAnswers)
+    setShortAnswerResults(newSAResults)
+    setCorrects(newCorrects)
+    setReviewMode(true)
     setQuestions(questions)
     navigate('/test')
   }

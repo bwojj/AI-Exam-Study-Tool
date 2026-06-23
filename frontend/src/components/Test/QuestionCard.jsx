@@ -11,9 +11,19 @@ export default function QuestionCard({
   onPrev,
   onNext,
   current,
-  total,
+  isShortAnswer,
+  userAnswerText,
+  onAnswerTextChange,
+  shortAnswerCorrect,
+  storedCorrect,
 }) {
   const userPick = answers[q.id] ?? null
+  // Normalize to number so strict equality works even when DB returns answer as string
+  const userPickNum = userPick !== null ? Number(userPick) : null
+  const correctIdx = q.correctIndex !== null && q.correctIndex !== undefined ? Number(q.correctIndex) : q.correctIndex
+  const computedCorrect = isShortAnswer ? shortAnswerCorrect === true : userPickNum === correctIdx
+  // storedCorrect is the authoritative boolean from the DB (or from corrects state after submission)
+  const isCorrect = storedCorrect !== null && storedCorrect !== undefined ? storedCorrect : computedCorrect
 
   return (
     <div
@@ -85,36 +95,61 @@ export default function QuestionCard({
         </pre>
       )}
 
-      {/* Choices grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 14,
-          marginBottom: 20,
-        }}
-      >
-        {q.choices.map((choice, index) => {
-          let state = 'default'
-          if (submitted) {
-            if (index === q.correctIndex) state = 'correct'
-            else if (index === userPick && userPick !== q.correctIndex) state = 'incorrect'
-          } else if (index === selectedIndex) {
-            state = 'selected'
-          }
-          return (
-            <ChoiceButton
-              key={index}
-              letter={['A', 'B', 'C', 'D'][index]}
-              text={choice}
-              state={state}
-              disabled={submitted}
-              onClick={() => onSelect(index)}
-              containsMarkdown={q.containsMarkdown}
-            />
-          )
-        })}
-      </div>
+      {/* Choices grid or short answer textarea */}
+      {isShortAnswer ? (
+        <textarea
+          value={userAnswerText}
+          onChange={e => onAnswerTextChange(e.target.value)}
+          disabled={submitted}
+          placeholder="Type your answer here…"
+          style={{
+            width: '100%',
+            minHeight: 120,
+            padding: '12px 14px',
+            border: '1px solid var(--hairline-strong)',
+            borderRadius: 'var(--r-md)',
+            background: 'var(--bg-2)',
+            color: 'var(--ink)',
+            fontSize: 14,
+            lineHeight: 1.6,
+            resize: 'vertical',
+            outline: 'none',
+            opacity: submitted ? 0.8 : 1,
+            marginBottom: 20,
+            boxSizing: 'border-box',
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 14,
+            marginBottom: 20,
+          }}
+        >
+          {(q.choices ?? []).map((choice, index) => {
+            let state = 'default'
+            if (submitted) {
+              if (index === correctIdx) state = 'correct'
+              else if (index === userPickNum && userPickNum !== correctIdx) state = 'incorrect'
+            } else if (index === selectedIndex) {
+              state = 'selected'
+            }
+            return (
+              <ChoiceButton
+                key={index}
+                letter={['A', 'B', 'C', 'D'][index]}
+                text={choice}
+                state={state}
+                disabled={submitted}
+                onClick={() => onSelect(index)}
+                containsMarkdown={q.containsMarkdown}
+              />
+            )
+          })}
+        </div>
+      )}
 
       {/* Explanation card */}
       {submitted && (
@@ -145,7 +180,7 @@ export default function QuestionCard({
             </div>
 
             {/* Right: verdict pill */}
-            {userPick === q.correctIndex ? (
+            {isCorrect ? (
               <span
                 style={{
                   padding: '3px 10px',
