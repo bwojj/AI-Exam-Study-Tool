@@ -26,6 +26,7 @@ class GeneratedTests(Base):
     explanation = Column(JSON, nullable=False)
     topic = Column(JSON, nullable=False)
     containsMarkdown = Column(JSON, nullable=False)
+    containsMath = Column(JSON, nullable=False)
     userAnswers = Column(JSON, default=list)
 
     owner = relationship("User", back_populates="tests")

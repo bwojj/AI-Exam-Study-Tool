@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Icon } from '../Icons'
 import TestStatusBar from './TestStatusBar'
 import QuestionCard from './QuestionCard'
@@ -28,10 +28,20 @@ export default function TestPage({
   const [submitted, setSubmitted] = useState(false)
   const [checkingAnswer, setCheckingAnswer] = useState(false)
   const [shortAnswerFeedbacks, setShortAnswerFeedbacks] = useState({})
+  const prevCurrentRef = useRef(current)
 
   useEffect(() => {
+    const prev = prevCurrentRef.current
+    prevCurrentRef.current = current
+    if (prev !== current) {
+      const prevQ = questions[prev]
+      if (prevQ?.type === 'short answer' && !(prevQ.id in corrects)) {
+        setAnswers(a => ({ ...a, [prevQ.id]: '' }))
+      }
+    }
     setSubmitted(false)
     setCheckingAnswer(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current])
 
   if (questions.length === 0) {
@@ -153,6 +163,7 @@ export default function TestPage({
         correctCount={correctCount}
       />
       <QuestionCard
+        key={q.id}
         q={q}
         selectedIndex={selectedIndex}
         onSelect={onSelect}
@@ -168,6 +179,7 @@ export default function TestPage({
         shortAnswerCorrect={shortAnswerResults[q.id] ?? null}
         storedCorrect={q.id in corrects ? corrects[q.id] : null}
         shortAnswerFeedback={shortAnswerFeedbacks[q.id] ?? null}
+        containsMath={q.containsMath ?? false}
       />
       <Composer
         submitted={effectiveSubmitted}

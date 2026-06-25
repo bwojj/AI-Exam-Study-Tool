@@ -15,6 +15,7 @@ class ReviewGuide(BaseModel):
     topic: dict[int, str]
     containsMarkdown: dict[int, bool]
     type: dict[int, str]
+    containsMath: dict[int, bool]
 
 # defines structued output class for check answer
 class CheckAnswer(BaseModel):

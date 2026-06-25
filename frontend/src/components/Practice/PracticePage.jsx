@@ -19,6 +19,7 @@ function buildQuestions(test) {
     explanation: test.explanation[key],
     topic: test.topic[key],
     containsMarkdown: test.containsMarkdown[key],
+    containsMath: test.containsMath?.[key] ?? false,
     type: test.type?.[key],
   }))
 }

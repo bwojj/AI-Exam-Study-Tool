@@ -121,7 +121,8 @@ async def upload_file(request: Request, user: user_dependency,
                     - Provide a body text to explain how to go about answering the question such as: "Select an option below" use the integer question number as the key, and the string body as the value.
                     - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topci as the value.
                     - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
-                    a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
+                    a dictionary with the integer problem as the key, and true or false if markdown was used as the value.  
+                    - For each problem, output to the 'containsMath' if the answer contains math. 
                     - For each problem, return the type of problem it is: multiple choice
                 `
             """,
@@ -170,6 +171,10 @@ async def upload_file(request: Request, user: user_dependency,
                    - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value.
                    - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
+                    - For each problem, output to the 'containsMath' boolean value true or false based on if the answer will be in
+                    math format (such as exponents, square roots, or anything of the sort), if a math problem is theory for example, and the
+                    answer is purely strings, the output for that problem should be false for that question number. it will
+                    be a dictionary with the question number as the key, and the true or false field as the value 
                     - For each problem, return the type of problem it is: short answer
                 `
             """,
@@ -220,6 +225,10 @@ async def upload_file(request: Request, user: user_dependency,
                     - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value.
                     - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
+                    - For each problem, output to the 'containsMath' boolean value true or false based on if the answer will be in
+                    math format (such as exponents, square roots, or anything of the sort), if a math problem is theory for example, and the
+                    answer is purely strings, the output for that problem should be false for that question number. it will
+                    be a dictionary with the question number as the key, and the true or false field as the value
                     - For each problem, return the type of problem it is, whether it be short answer or multiple choice
             """,
             input_variables=['difficulty']
@@ -259,7 +268,8 @@ async def upload_file(request: Request, user: user_dependency,
             "explanation": lambda x: x.explanation, 
             "topic": lambda x: x.topic,
             "containsMarkdown": lambda x: x.containsMarkdown, 
-            "type": lambda x: x.type
+            "type": lambda x: x.type,
+            "containsMath": lambda x: x.containsMath
         }
     )
 
@@ -283,6 +293,7 @@ async def upload_file(request: Request, user: user_dependency,
         explanation = output["explanation"], 
         topic = output["topic"], 
         containsMarkdown = output["containsMarkdown"],
+        containsMath = output["containsMath"],
         owner = db_user, 
     )
     # saves and commits to database

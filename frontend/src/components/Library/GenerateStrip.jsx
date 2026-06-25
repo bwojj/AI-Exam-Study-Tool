@@ -37,6 +37,7 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
         explanation: data.explanation[key],
         topic: data.topic[key],
         containsMarkdown: data.containsMarkdown[key],
+        containsMath: data.containsMath?.[key] ?? false,
         type: data.type?.[key],
       }))
       setQuestions(newQuestions)

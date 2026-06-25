@@ -1,6 +1,7 @@
 import { Icon } from '../Icons'
 import ChoiceButton from './ChoiceButton'
 import MarkdownContent from './MarkdownContent'
+import MathInput from './MathInput'
 
 export default function QuestionCard({
   q,
@@ -17,6 +18,7 @@ export default function QuestionCard({
   shortAnswerCorrect,
   storedCorrect,
   shortAnswerFeedback,
+  containsMath,
 }) {
   const userPick = answers[q.id] ?? null
   // Normalize to number so strict equality works even when DB returns answer as string
@@ -96,60 +98,40 @@ export default function QuestionCard({
         </pre>
       )}
 
-      {/* Choices grid or short answer textarea */}
+      {/* Choices grid or short answer input */}
       {isShortAnswer ? (
-        <>
-        <textarea
-          value={userAnswerText}
-          onChange={e => onAnswerTextChange(e.target.value)}
-          disabled={submitted}
-          placeholder="Type your answer here…"
-          style={{
-            width: '100%',
-            minHeight: 120,
-            padding: '12px 14px',
-            border: '1px solid var(--hairline-strong)',
-            borderRadius: 'var(--r-md)',
-            background: 'var(--bg-2)',
-            color: 'var(--ink)',
-            fontSize: 14,
-            lineHeight: 1.6,
-            resize: 'vertical',
-            outline: 'none',
-            opacity: submitted ? 0.8 : 1,
-            marginBottom: userAnswerText.trim() && !submitted ? 8 : 20,
-            boxSizing: 'border-box',
-          }}
-        />
-        {!submitted && userAnswerText.trim() && (
-          <div
+        containsMath ? (
+          <MathInput
+            value={userAnswerText}
+            onChange={onAnswerTextChange}
+            disabled={submitted}
+            placeholder="Type answer here"
+            minHeight={80}
+          />
+        ) : (
+          <textarea
+            value={userAnswerText}
+            onChange={e => onAnswerTextChange(e.target.value)}
+            disabled={submitted}
+            placeholder="Type answer here"
             style={{
-              marginBottom: 20,
+              width: '100%',
+              minHeight: 120,
               padding: '12px 14px',
-              border: '1px solid var(--hairline)',
+              border: '1px solid var(--hairline-strong)',
               borderRadius: 'var(--r-md)',
               background: 'var(--bg-2)',
+              color: 'var(--ink)',
               fontSize: 14,
-              color: 'var(--ink-2)',
               lineHeight: 1.6,
+              resize: 'vertical',
+              outline: 'none',
+              opacity: submitted ? 0.8 : 1,
+              marginBottom: 20,
+              boxSizing: 'border-box',
             }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'var(--muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                marginBottom: 8,
-              }}
-            >
-              Preview
-            </div>
-            <MarkdownContent content={userAnswerText} />
-          </div>
-        )}
-        </>
+          />
+        )
       ) : (
         <div
           style={{
