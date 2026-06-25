@@ -86,3 +86,52 @@
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.35; }
 }
+
+/* Scoped typography for rendered markdown blocks */
+.md-body p              { margin-bottom: 0.75em; }
+.md-body p:last-child   { margin-bottom: 0; }
+
+.md-body h1, .md-body h2, .md-body h3, .md-body h4 {
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 0.9em;
+  margin-bottom: 0.4em;
+}
+.md-body h1 { font-size: 1.4em; }
+.md-body h2 { font-size: 1.2em; }
+.md-body h3 { font-size: 1.05em; }
+
+.md-body ul { list-style-type: disc;    padding-left: 1.5em; margin-bottom: 0.75em; }
+.md-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.75em; }
+.md-body li { margin-bottom: 0.2em; }
+
+.md-body strong { font-weight: 600; color: var(--ink); }
+.md-body em     { font-style: italic; }
+
+.md-body code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--hairline);
+  color: var(--accent);
+  padding: 0.1em 0.35em;
+  border-radius: var(--r-sm);
+}
+.md-body pre {
+  background: var(--bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  margin-bottom: 0.75em;
+}
+.md-body pre code { background: none; padding: 0; color: var(--ink-2); }
+
+.md-body blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1em;
+  color: var(--ink-2);
+  margin-left: 0;
+  margin-bottom: 0.75em;
+}

@@ -16,6 +16,7 @@ export default function QuestionCard({
   onAnswerTextChange,
   shortAnswerCorrect,
   storedCorrect,
+  shortAnswerFeedback,
 }) {
   const userPick = answers[q.id] ?? null
   // Normalize to number so strict equality works even when DB returns answer as string
@@ -58,7 +59,7 @@ export default function QuestionCard({
           textWrap: 'balance',
         }}
       >
-        <MarkdownContent content={q.question} isMarkdown={q.containsMarkdown} />
+        <MarkdownContent content={q.question} inline />
       </h2>
 
       {/* Body */}
@@ -71,7 +72,7 @@ export default function QuestionCard({
             margin: '0 0 20px',
           }}
         >
-          <MarkdownContent content={q.body} isMarkdown={q.containsMarkdown} />
+          <MarkdownContent content={q.body} inline />
         </p>
       )}
 
@@ -97,6 +98,7 @@ export default function QuestionCard({
 
       {/* Choices grid or short answer textarea */}
       {isShortAnswer ? (
+        <>
         <textarea
           value={userAnswerText}
           onChange={e => onAnswerTextChange(e.target.value)}
@@ -115,10 +117,39 @@ export default function QuestionCard({
             resize: 'vertical',
             outline: 'none',
             opacity: submitted ? 0.8 : 1,
-            marginBottom: 20,
+            marginBottom: userAnswerText.trim() && !submitted ? 8 : 20,
             boxSizing: 'border-box',
           }}
         />
+        {!submitted && userAnswerText.trim() && (
+          <div
+            style={{
+              marginBottom: 20,
+              padding: '12px 14px',
+              border: '1px solid var(--hairline)',
+              borderRadius: 'var(--r-md)',
+              background: 'var(--bg-2)',
+              fontSize: 14,
+              color: 'var(--ink-2)',
+              lineHeight: 1.6,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                marginBottom: 8,
+              }}
+            >
+              Preview
+            </div>
+            <MarkdownContent content={userAnswerText} />
+          </div>
+        )}
+        </>
       ) : (
         <div
           style={{
@@ -211,7 +242,7 @@ export default function QuestionCard({
 
           {/* Body */}
           <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.6 }}>
-            <MarkdownContent content={q.explanation} isMarkdown={q.containsMarkdown} />
+            <MarkdownContent content={isShortAnswer && shortAnswerFeedback ? shortAnswerFeedback : q.explanation} />
           </div>
         </div>
       )}

@@ -136,6 +136,10 @@ export async function updateAnswer({ testId, question, answer, correct }) {
   if (res.status === 401) onUnauthorized()
 }
 
+export function extractFeedback(result) {
+  return result?.Feedback ?? null
+}
+
 export function normalizeCheckAnswer(result) {
   if (typeof result === 'string') return result === 'correct'
   if (result && 'Correct' in result) return result.Correct

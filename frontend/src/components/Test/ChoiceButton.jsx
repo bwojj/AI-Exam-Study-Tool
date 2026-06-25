@@ -83,7 +83,7 @@ export default function ChoiceButton({ letter, text, state, disabled, onClick, c
         {letter}
       </span>
       <span style={{ lineHeight: 1.5, paddingTop: 4 }}>
-        <MarkdownContent content={text} isMarkdown={containsMarkdown} />
+        <MarkdownContent content={text} inline />
       </span>
     </button>
   )

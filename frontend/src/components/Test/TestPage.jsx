@@ -5,7 +5,7 @@ import QuestionCard from './QuestionCard'
 import Composer from './Composer'
 import Pager from './Pager'
 import FinishScreen from './FinishScreen'
-import { checkAnswer, normalizeCheckAnswer, updateAnswer } from '../../services/api'
+import { checkAnswer, normalizeCheckAnswer, extractFeedback, updateAnswer } from '../../services/api'
 
 export default function TestPage({
   questions,
@@ -27,6 +27,7 @@ export default function TestPage({
 }) {
   const [submitted, setSubmitted] = useState(false)
   const [checkingAnswer, setCheckingAnswer] = useState(false)
+  const [shortAnswerFeedbacks, setShortAnswerFeedbacks] = useState({})
 
   useEffect(() => {
     setSubmitted(false)
@@ -103,6 +104,7 @@ export default function TestPage({
         const isCorrect = normalizeCheckAnswer(raw)
         setShortAnswerResults(prev => ({ ...prev, [q.id]: isCorrect }))
         setCorrects(prev => ({ ...prev, [q.id]: isCorrect }))
+        setShortAnswerFeedbacks(prev => ({ ...prev, [q.id]: extractFeedback(raw) }))
         updateAnswer({ testId, question: q.id, answer: text, correct: isCorrect })
         setSubmitted(true)
       } finally {
@@ -165,6 +167,7 @@ export default function TestPage({
         onAnswerTextChange={onAnswerTextChange}
         shortAnswerCorrect={shortAnswerResults[q.id] ?? null}
         storedCorrect={q.id in corrects ? corrects[q.id] : null}
+        shortAnswerFeedback={shortAnswerFeedbacks[q.id] ?? null}
       />
       <Composer
         submitted={effectiveSubmitted}

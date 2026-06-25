@@ -36,6 +36,7 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 
 origins = [
     "http://localhost:5176",  
+    "http://localhost:5173",
     "http://127.0.0.1:5176",  
 ]
 
@@ -98,11 +99,15 @@ async def upload_file(request: Request, user: user_dependency,
 
                 `
                     - Fully digest and read every line of the uploaded text content (from PDF) or image
-                    - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
+                    - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc). DO NOT include Markdown in topic.
                     - Determine the exact number of questions the user specified 
                      - If the multiple choice questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
                     text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
                     to be displayed as they should be 
+                    - Never use \\text{{}} to wrap mathematical expressions. Only use \\text for
+                    prose words embedded in a formula (e.g. \\text{{ where }}). Math symbols, variables,
+                    and expressions like x^2 or 16 + x^2 must appear directly in math mode without any
+                    \\text{{}} wrapper.
                     - Create multiple choice exam questions relating to specific problems, or topics from the PDF text of difficulty {difficulty}, explicitly follow this difficulty level
                     - Create 4 different choices to choose from for each problem, making sure they are all valid in problem context 
                     - After creating the exam questions, double check they are solveable 
@@ -143,16 +148,20 @@ async def upload_file(request: Request, user: user_dependency,
 
                 `
                     - Fully digest and read every line of the uploaded text content (from PDF), or image 
-                    - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
+                    - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc) DO NOT include Markdown in topic.
                     - Determine the exact number of questions the user specified 
                     - Determine the topic of the exam
                     - Create short answer exam questions relating to specific problems, or topics from the PDF text of difficulty {difficulty}
                     - If the short answer questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
                     text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
                     to be displayed as they should be 
-                    - After creating the exam questions, double check they are solveable 
+                    - Never use \\text{{}} to wrap mathematical expressions. Only use \\text for
+                    prose words embedded in a formula (e.g. \\text{{ where }}). Math symbols, variables,
+                    and expressions like x^2 or 16 + x^2 must appear directly in math mode without any
+                    \\text{{}} wrapper.
+                    - After creating the exam questions, double check they are solveable
                     - After creating the exam questions, double check they are of the same type and difficulty
-                    as text problems from the PDF 
+                    as text problems from the PDF
                     - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
                     as the value, the second with the question number as a key, then the answer as the value, set the third 'options' dictionary
                     to None
@@ -187,11 +196,15 @@ async def upload_file(request: Request, user: user_dependency,
 
                 `
                     - Fully digest and read every line of the uploaded text content (from PDF) or image
-                    - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc)
+                    - Determine the topic of the exam (e.g Calculus, Physics, Coding, exc) DO NOT include Markdown in topic.
                     - Determine the exact number of questions the user specified
                     - If the mixed format questions include mathematics, physics, coding, or anything else where the problems or answers might be different than plain 
                     text (such as square roots, exponents, code blocks exc.) return the problem as markdown to allow them
-                    to be displayed as they should be  
+                    to be displayed as they should be 
+                    - Never use \\text{{}} to wrap mathematical expressions. Only use \\text for 
+                    prose words embedded in a formula (e.g. \\text{{ where }}). Math symbols, variables, 
+                    and expressions like x^2 or 16 + x^2 must appear directly in math mode without any 
+                    \\text{{}} wrapper.  
                     - Create 1/4 of the specified amount as multiple choice exam questions, and 3/4
                      as short answer questions, all relating to specific problems, or topics from the PDF text of difficulty {difficulty}
                     - Create 4 different choices to choose from for each multiple choice problem, making sure they are all valid in problem context 
@@ -321,24 +334,21 @@ async def check_answer(request: Request, user: user_dependency, db: Session = De
 
         system_prompt = SystemMessagePromptTemplate.from_template(
             """
-                You are an AI assistant located within an AI application that takes in files such as 
-                text-based, or image files, and generates practice exam questions and answers of ranging 
-                difficulties, for users to study from. 
+                You are an AI assistant located within an AI application that takes in files such as
+                text-based, or image files, and generates practice exam questions and answers of ranging
+                difficulties, for users to study from.
 
                 Your specific task within this application is to take in a generated question, generated answer,
-                and user answer, to determine if the user's answer is correct.
+                and user answer, to determine if the user's answer is correct and provide feedback.
 
-                You should output only two things, a JSON object in this format denoted in backticks: 
-                    
-                `
-                "Correct": True
-                `
-
-                or 
-
-                `
-                "Correct": False
-                `
+                You must output a JSON object with two fields:
+                - "correct": true if the user's answer is correct, false otherwise
+                - "feedback": a concise explanation of the correct answer and why the user's answer
+                  was right or wrong. Use proper markdown formatting:
+                  - Inline math: $x^2 + y^2 = z^2$
+                  - Block math: $$\\int_0^\\infty e^{{-x}} dx = 1$$
+                  - Code fences with language tag for code snippets
+                  - Bold, lists, etc. as appropriate
             """
         )
 
@@ -358,7 +368,8 @@ async def check_answer(request: Request, user: user_dependency, db: Session = De
             | prompt
             | llm 
             | {
-                "Correct": lambda x: x.correct
+                "Correct": lambda x: x.correct,
+                "Feedback": lambda x: x.feedback,
             }
         )
 
@@ -368,17 +379,17 @@ async def check_answer(request: Request, user: user_dependency, db: Session = De
 
 @app.post("/update-answer")
 async def update_answer(user: user_dependency, db: Session = Depends(get_db),
-                        id: str = Form("id"), correct: bool = Form("correct"), 
-                        question: int = Form("question"), user_ans: int | str = Form("answer")):
+                        id: str = Form("id"), correct: bool = Form("correct"),
+                        question: int = Form("question"), answer: int | str = Form(...)):
     test_to_update = db.query(models.GeneratedTests).filter(models.GeneratedTests.id == id).first()
 
     if not test_to_update:
         raise HTTPException(status_code=404, detail="Test not found")
-    
+
     current_answers = test_to_update.userAnswers or []
     current_answers.append({
-        "question_num": question, 
-        "answer": user_ans, 
+        "question_num": question,
+        "answer": answer,
         "correct": correct
     })
 

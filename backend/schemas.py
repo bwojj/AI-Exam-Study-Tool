@@ -16,6 +16,7 @@ class ReviewGuide(BaseModel):
     containsMarkdown: dict[int, bool]
     type: dict[int, str]
 
-# defines structued output class for check answer 
-class CheckAnswer(BaseModel): 
+# defines structued output class for check answer
+class CheckAnswer(BaseModel):
     correct: bool
+    feedback: str
