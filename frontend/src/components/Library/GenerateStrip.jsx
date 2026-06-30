@@ -42,6 +42,7 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
       }))
       setQuestions(newQuestions)
       setTestId?.(data.test_id)
+      setGenerateConfig((prev) => ({ ...prev, name: '' }))
       window.dispatchEvent(new CustomEvent('praxis:test-generated'))
       navigate('/test')
       onGenerated?.()

@@ -162,7 +162,7 @@ export default function PracticePage({
     <div style={{ padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--ink)', margin: 0 }}>
-          Practice
+          Generated Tests
         </h1>
         <p style={{ fontSize: 13.5, color: 'var(--muted)', margin: '6px 0 0' }}>
           {tests.length} test{tests.length !== 1 ? 's' : ''} generated

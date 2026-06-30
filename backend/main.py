@@ -119,7 +119,8 @@ async def upload_file(request: Request, user: user_dependency,
                     answer they correspond to in a list such as ["option here", "option here"] and so on DO NOT include the letter in the options list. 
                     - Provide an explanation for the correct answer to the explanation key in the output, using the integer question number as the key, and the string explanation as value. 
                     - Provide a body text to explain how to go about answering the question such as: "Select an option below" use the integer question number as the key, and the string body as the value.
-                    - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topci as the value.
+                    - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value
+                    DO NOT use markdown in this topic text.
                     - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value.  
                     - For each problem, output to the 'containsMath' if the answer contains math. 
@@ -169,6 +170,7 @@ async def upload_file(request: Request, user: user_dependency,
                    - Provide an explanation for the correct answer to the explanation key in the output, using the integer question number as the key, and the string explanation as value. 
                    - Provide a body text to explain how to go about answering the question such as: "Select an option below" use the integer question number as the key, and the string body as the value.
                    - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value.
+                    DO NOT use markdown in this topic text.
                    - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
                     - For each problem, output to the 'containsMath' boolean value true or false based on if the answer will be in
@@ -223,6 +225,7 @@ async def upload_file(request: Request, user: user_dependency,
                     - Provide an explanation for the correct answer to the explanation key in the output, using the integer question number as the key, and the string explanation as value. 
                     - Provide a body text to explain how to go about answering the question such as: "Select an option below" use the integer question number as the key, and the string body as the value.
                     - Provide a topic text to explain which topic the question is from such as "Integrals" for each problem, output in dictionary using integer question number as key, and topic as the value.
+                    DO NOT use markdown in this topic text.
                     - Output to the 'containsMarkdown" boolean value true or false based on if markdown was used in the problem. The output is
                     a dictionary with the integer problem as the key, and true or false if markdown was used as the value. 
                     - For each problem, output to the 'containsMath' boolean value true or false based on if the answer will be in

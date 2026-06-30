@@ -9,8 +9,10 @@ load_dotenv()
 # links to the database (sqlite for dev postgre in prod)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+
 # creates engine to communicate with the database 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
 # creates the session object 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

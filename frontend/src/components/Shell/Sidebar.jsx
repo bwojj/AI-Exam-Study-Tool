@@ -18,7 +18,7 @@ function getUsername() {
 
 const NAV = [
   { label: 'Library', icon: Icon.Folder, path: '/' },
-  { label: 'History', icon: Icon.Clock, path: '/practice' },
+  { label: 'Generated Tests', icon: Icon.Clock, path: '/practice' },
 ]
 
 export default function Sidebar() {

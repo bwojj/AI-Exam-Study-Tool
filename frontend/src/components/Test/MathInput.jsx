@@ -29,7 +29,7 @@ export default function MathInput({ value, onChange, disabled, placeholder, minH
   return (
     <math-field
       ref={ref}
-      smart-mode="true"
+      default-mode="math"
       style={{
         width: '100%',
         minHeight,
