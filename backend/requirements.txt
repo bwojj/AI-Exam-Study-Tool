@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+sqlalchemy
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+slowapi
+pypdf
+langchain-core
+langchain-community
+langchain-google-genai
