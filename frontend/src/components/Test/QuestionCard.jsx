@@ -30,6 +30,7 @@ export default function QuestionCard({
 
   return (
     <div
+      className="question-card"
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--hairline)',
@@ -51,6 +52,7 @@ export default function QuestionCard({
 
       {/* Title */}
       <h2
+        className="question-title"
         style={{
           fontSize: 28,
           fontWeight: 600,
@@ -134,6 +136,7 @@ export default function QuestionCard({
         )
       ) : (
         <div
+          className="choice-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',

@@ -21,7 +21,7 @@ function getUsername() {
   }
 }
 
-export default function Topbar({ onLogout }) {
+export default function Topbar({ onLogout, onToggleSidebar }) {
   const { pathname } = useLocation()
   const title = TITLES[pathname] ?? 'Praxis'
   const [open, setOpen] = useState(false)
@@ -61,7 +61,30 @@ export default function Topbar({ onLogout }) {
       borderBottom: '1px solid var(--hairline)',
       flexShrink: 0,
     }}>
-      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-2)' }}>{title}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button
+          onClick={onToggleSidebar}
+          aria-label="Toggle sidebar"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 32,
+            height: 32,
+            borderRadius: 'var(--r-md)',
+            border: '1px solid transparent',
+            background: 'transparent',
+            color: 'var(--ink-2)',
+            cursor: 'pointer',
+            transition: 'background .15s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--hairline)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent' }}
+        >
+          <Icon.Menu size={18} strokeWidth={1.6} />
+        </button>
+        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-2)' }}>{title}</span>
+      </div>
 
       <div ref={menuRef} style={{ position: 'relative' }}>
         <button

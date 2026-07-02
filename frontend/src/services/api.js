@@ -100,9 +100,10 @@ export async function logout(token) {
 export async function generateTest({ fileIds, count, difficulty, style }) {
   const res = await fetch(`${BASE}/generate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ fileIds, count, difficulty, style }),
   })
+  if (res.status === 401) { onUnauthorized(); return null }
   if (!res.ok) throw new Error(`Generate failed: ${res.statusText}`)
   return res.json()
 }

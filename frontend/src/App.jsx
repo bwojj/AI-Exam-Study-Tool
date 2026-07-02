@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import AppShell from './components/Shell/AppShell'
 import LibraryPage from './components/Library/LibraryPage'
 import TestPage from './components/Test/TestPage'
 import PracticePage from './components/Practice/PracticePage'
 import AuthPage from './components/Auth/AuthPage'
-import { getSession, clearSession } from './services/authStore'
+import { getSession, clearSession, isSessionValid } from './services/authStore'
+import { buildQuestions } from './utils/buildQuestions'
 
 export default function App() {
-  const [authed, setAuthed] = useState(() => !!getSession())
+  const [authed, setAuthed] = useState(() => {
+    if (!getSession()) return false
+    if (!isSessionValid()) { clearSession(); return false }
+    return true
+  })
   const [files, setFiles] = useState([])
   const [generateConfig, setGenerateConfig] = useState({
     count: 10,
@@ -17,15 +22,15 @@ export default function App() {
     name: '',
   })
   const [questions, setQuestions] = useState([])
-  const [answers, setAnswers] = useState({})             // { [questionId]: choiceIndex | string }
-  const [shortAnswerResults, setShortAnswerResults] = useState({}) // { [questionId]: boolean }
-  const [flags, setFlags] = useState({})                 // { [questionId]: boolean }
+  const [answers, setAnswers] = useState({})
+  const [shortAnswerResults, setShortAnswerResults] = useState({})
+  const [flags, setFlags] = useState({})
   const [current, setCurrent] = useState(0)
   const [finished, setFinished] = useState(false)
   const [testId, setTestId] = useState(null)
-  const [corrects, setCorrects] = useState({})           // { [questionId]: boolean }
+  const [corrects, setCorrects] = useState({})
   const [reviewMode, setReviewMode] = useState(false)
-
+  const navigate = useNavigate()
 
   useEffect(() => {
     function handleUnauthorized() {
@@ -47,12 +52,34 @@ export default function App() {
     setReviewMode(false)
   }
 
+  function onSelectTest(test) {
+    const qs = buildQuestions(test)
+    resetTest()
+    const newAnswers = {}
+    const newSAResults = {}
+    const newCorrects = {}
+    test.userAnswers?.forEach(ua => {
+      const qId = String(ua.question_num)
+      const qType = test.type?.[ua.question_num]
+      newAnswers[qId] = qType === 'short answer' ? ua.answer : Number(ua.answer)
+      if (qType === 'short answer') newSAResults[qId] = ua.correct
+      newCorrects[qId] = ua.correct
+    })
+    setTestId(test.id)
+    setAnswers(newAnswers)
+    setShortAnswerResults(newSAResults)
+    setCorrects(newCorrects)
+    setReviewMode(true)
+    setQuestions(qs)
+    navigate('/test')
+  }
+
   if (!authed) {
     return <AuthPage onAuthed={() => setAuthed(true)} />
   }
 
   return (
-    <AppShell onLogout={() => { clearSession(); setAuthed(false) }}>
+    <AppShell onLogout={() => { clearSession(); setAuthed(false) }} onSelectTest={onSelectTest}>
       <Routes>
         <Route
           path="/"
@@ -95,15 +122,7 @@ export default function App() {
         <Route
           path="/practice"
           element={
-            <PracticePage
-              setQuestions={setQuestions}
-              resetTest={resetTest}
-              setTestId={setTestId}
-              setAnswers={setAnswers}
-              setShortAnswerResults={setShortAnswerResults}
-              setCorrects={setCorrects}
-              setReviewMode={setReviewMode}
-            />
+            <PracticePage onSelectTest={onSelectTest} />
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

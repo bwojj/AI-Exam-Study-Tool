@@ -162,6 +162,7 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
           </div>
 
           <h3
+            className="gen-heading"
             style={{
               fontSize: '18px',
               fontWeight: 600,
@@ -175,6 +176,7 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
           </h3>
 
           <p
+            className="gen-sub"
             style={{
               fontSize: '12.5px',
               color: 'var(--ink-2)',
@@ -213,6 +215,7 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
 
         {/* Right: controls + CTA */}
         <div
+          className="gen-controls"
           style={{
             display: 'flex',
             gap: '18px',

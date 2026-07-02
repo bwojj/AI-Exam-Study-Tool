@@ -323,7 +323,7 @@ def get_all_tests(request: Request, user: user_dependency, db: Session = Depends
 
 
 @app.get("/", status_code=status.HTTP_200_OK)
-async def user(user: user_dependency, db: get_db):
+async def user(user: user_dependency, db: Session = Depends(get_db)):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
     return {"User": user}
@@ -366,7 +366,7 @@ async def check_answer(request: Request, user: user_dependency, db: Session = De
                   - Inline math: $x^2 + y^2 = z^2$
                   - Block math: $$\\int_0^\\infty e^{{-x}} dx = 1$$
                   - Code fences with language tag for code snippets
-                  - Bold, lists, etc. as appropriate
+                  - DO NOT USE html tags of any sort
             """
         )
 

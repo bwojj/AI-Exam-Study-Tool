@@ -144,6 +144,7 @@ export default function TestPage({
 
   return (
     <div
+      className="test-page"
       style={{
         flex: 1,
         overflowY: 'auto',

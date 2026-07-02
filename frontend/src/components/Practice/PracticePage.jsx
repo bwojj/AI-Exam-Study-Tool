@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { getGeneratedTests } from '../../services/api'
 import { Icon } from '../Icons'
 
@@ -7,21 +6,6 @@ function formatDate(dateStr) {
   if (!dateStr) return 'Unknown date'
   const d = new Date(dateStr)
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function buildQuestions(test) {
-  return Object.entries(test.questions).map(([key, value]) => ({
-    id: key,
-    question: value,
-    correctIndex: test.answers[key],
-    choices: test.options ? test.options[key] : [],
-    body: test.body[key],
-    explanation: test.explanation[key],
-    topic: test.topic[key],
-    containsMarkdown: test.containsMarkdown[key],
-    containsMath: test.containsMath?.[key] ?? false,
-    type: test.type?.[key],
-  }))
 }
 
 function TestRow({ test, onSelect }) {
@@ -90,19 +74,10 @@ function TestRow({ test, onSelect }) {
   )
 }
 
-export default function PracticePage({
-  setQuestions,
-  resetTest,
-  setTestId,
-  setAnswers,
-  setShortAnswerResults,
-  setCorrects,
-  setReviewMode,
-}) {
+export default function PracticePage({ onSelectTest }) {
   const [tests, setTests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const navigate = useNavigate()
 
   useEffect(() => {
     getGeneratedTests().then(data => {
@@ -114,33 +89,6 @@ export default function PracticePage({
       setLoading(false)
     })
   }, [])
-
-  function handleSelect(test) {
-    const questions = buildQuestions(test)
-    resetTest()
-
-    const newAnswers = {}
-    const newSAResults = {}
-    const newCorrects = {}
-    test.userAnswers?.forEach(ua => {
-      const qId = String(ua.question_num)
-      const qType = test.type?.[ua.question_num]
-      // MC answers may be serialized as strings; coerce to number for strict equality with correctIndex
-      newAnswers[qId] = qType === 'short answer' ? ua.answer : Number(ua.answer)
-      if (qType === 'short answer') {
-        newSAResults[qId] = ua.correct
-      }
-      newCorrects[qId] = ua.correct
-    })
-
-    setTestId(test.id)
-    setAnswers(newAnswers)
-    setShortAnswerResults(newSAResults)
-    setCorrects(newCorrects)
-    setReviewMode(true)
-    setQuestions(questions)
-    navigate('/test')
-  }
 
   if (loading) {
     return (
@@ -177,7 +125,7 @@ export default function PracticePage({
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {tests.slice().reverse().map(test => (
-            <TestRow key={test.id} test={test} onSelect={handleSelect} />
+            <TestRow key={test.id} test={test} onSelect={onSelectTest} />
           ))}
         </div>
       )}

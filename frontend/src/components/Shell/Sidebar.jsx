@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Icon } from '../Icons'
 import Logo from '../Logo'
-import { getGeneratedTests } from '../../services/api'
 import { getSession } from '../../services/authStore'
+import { getGeneratedTests } from '../../services/api'
 
 function getUsername() {
   const session = getSession()
@@ -21,21 +21,36 @@ const NAV = [
   { label: 'Generated Tests', icon: Icon.Clock, path: '/practice' },
 ]
 
-export default function Sidebar() {
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+export default function Sidebar({ onSelectTest, onClose, mobile }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const [testCount, setTestCount] = useState(0)
   const username = getUsername()
   const initial = (username?.[0] ?? 'U').toUpperCase()
+  const [tests, setTests] = useState([])
 
   useEffect(() => {
-    function refreshCount() {
-      getGeneratedTests().then(data => { if (Array.isArray(data)) setTestCount(data.length) })
-    }
-    refreshCount()
-    window.addEventListener('praxis:test-generated', refreshCount)
-    return () => window.removeEventListener('praxis:test-generated', refreshCount)
-  }, [])
+    getGeneratedTests().then(data => {
+      if (!(data instanceof Error)) setTests(data)
+    })
+  }, [pathname])
+
+  const recents = tests.slice().reverse().slice(0, 5)
+
+  const totalTests = tests.length
+  const attempted = tests.filter(t => (t.userAnswers?.length ?? 0) > 0)
+  const avgAccuracy = attempted.length > 0
+    ? Math.round(
+        attempted.reduce((sum, t) => {
+          const correct = t.userAnswers.filter(ua => ua.correct).length
+          return sum + (correct / t.number_of_questions) * 100
+        }, 0) / attempted.length
+      )
+    : null
 
   return (
     <aside style={{
@@ -46,6 +61,14 @@ export default function Sidebar() {
       flexDirection: 'column',
       gap: 24,
       overflow: 'hidden',
+      ...(mobile ? {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100vh',
+        width: 260,
+        zIndex: 200,
+      } : {}),
     }}>
       {/* Brand */}
       <Logo size={34} showWordmark={true} />
@@ -57,7 +80,7 @@ export default function Sidebar() {
           return (
             <button
               key={path}
-              onClick={() => navigate(path)}
+              onClick={() => { navigate(path); if (mobile) onClose?.() }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -80,25 +103,62 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Test Count */}
+
+      {/* Recents */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '0 6px', marginBottom: 2 }}>
+          Recent
+        </div>
+        {tests.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--muted)', padding: '3px 6px' }}>No tests yet</div>
+        ) : (
+          recents.map(test => (
+            <button
+              key={test.id}
+              onClick={() => { onSelectTest(test); if (mobile) onClose?.() }}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                background: 'transparent',
+                border: 'none',
+                padding: '5px 6px',
+                borderRadius: 'var(--r-sm)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-3)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >
+              <span style={{ fontSize: 12.5, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                {test.name || 'Untitled'}
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--muted)', flexShrink: 0, marginLeft: 8 }}>
+                {formatDate(test.date)}
+              </span>
+            </button>
+          ))
+        )}
+      </div>
+
       <div style={{
-        padding: '12px 14px',
+        padding: '10px 12px',
         borderRadius: 'var(--r-md)',
         border: '1px solid var(--hairline)',
         background: 'var(--bg)',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        flexDirection: 'column',
+        gap: 6,
       }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>
-            Tests Generated
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--ink)', fontFamily: 'var(--font-mono)', lineHeight: 1.15, marginTop: 4 }}>
-            {testCount}
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>Tests Generated</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{totalTests}</span>
         </div>
-        <Icon.Sparkles size={20} color="var(--accent)" strokeWidth={1.5} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>Avg Accuracy</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{avgAccuracy !== null ? `${avgAccuracy}%` : '—'}</span>
+        </div>
       </div>
 
       {/* User card */}

@@ -135,3 +135,27 @@
   margin-left: 0;
   margin-bottom: 0.75em;
 }
+
+@media (max-width: 767px) {
+  /* Library – generate strip */
+  .gen-heading { font-size: 15px !important; }
+  .gen-sub     { font-size: 11px !important; }
+  .gen-controls { width: 100% !important; justify-content: center !important; }
+
+  /* Test page wrapper */
+  .test-page { padding: 16px 16px 60px !important; }
+
+  /* TestStatusBar */
+  .status-bar    { padding: 8px 12px !important; }
+  .status-groups { overflow-x: auto; padding-bottom: 2px; }
+  .status-group  { padding-left: 10px !important; padding-right: 10px !important; }
+  .status-group-first { padding-left: 0 !important; }
+  .status-label  { font-size: 10px !important; }
+  .status-value  { font-size: 12px !important; }
+  .status-topic  { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* QuestionCard */
+  .question-card  { padding: 16px !important; }
+  .question-title { font-size: 19px !important; }
+  .choice-grid    { grid-template-columns: 1fr !important; }
+}
