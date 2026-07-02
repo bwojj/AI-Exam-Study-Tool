@@ -166,7 +166,8 @@ async def upload_file(request: Request, user: user_dependency,
                     - After creating the exam questions, double check they are of the same type and difficulty
                     as text problems from the PDF
                     - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
-                    as the value, the second with the question number as a key, then the answer as the value, set the third 'options' dictionary
+                    as the value, the second with the question number as a key, then the answer as the value make sure the answer
+                    is text, not any integer values since the questions will be short answer based, set the third 'options' dictionary
                     to None
                    - Provide an explanation for the correct answer to the explanation key in the output, using the integer question number as the key, and the string explanation as value. 
                    - Provide a body text to explain how to go about answering the question such as: "Select an option below" use the integer question number as the key, and the string body as the value.
@@ -220,7 +221,8 @@ async def upload_file(request: Request, user: user_dependency,
                     - After creating the exam questions, double check they are of the same type and difficulty
                     as text problems from the PDF 
                     - Output with Review Guide model with dictionaries in that, one with the question number as key, then the problem text
-                    as the value, the second with the question number as a key, then the answer as the value, and the 3rd with the
+                    as the value, the second with the question number as a key, then the answer as the value - ensuring
+                    the answer is in text format - not an index, and the 3rd with the
                      multiple choice question number as the key, and the alphebetical options with the 
                     answer they correspond to such as "option here", "option here" and so on  
                     - Provide an explanation for the correct answer to the explanation key in the output, using the integer question number as the key, and the string explanation as value. 

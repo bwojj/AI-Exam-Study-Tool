@@ -1,8 +1,5 @@
-import { Icon } from '../Icons'
-
-export default function TestStatusBar({ q, current, total, answers, flags, setFlags, correctCount }) {
+export default function TestStatusBar({ q, current, total, answers, correctCount }) {
   const answered = Object.keys(answers).length
-  const isFlagged = !!flags[q.id]
   const scorePercent = total > 0 ? Math.round((correctCount / total) * 100) : 0
 
   return (
@@ -105,32 +102,6 @@ export default function TestStatusBar({ q, current, total, answers, flags, setFl
         </div>
       </div>
 
-      {/* Right: Flag button */}
-      <button
-        onClick={() => setFlags(prev => ({ ...prev, [q.id]: !isFlagged }))}
-        style={{
-          padding: '6px 12px',
-          borderRadius: 'var(--r-md)',
-          fontSize: 12.5,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          ...(isFlagged
-            ? {
-                border: '1px solid var(--warn)',
-                color: 'var(--warn)',
-                background: 'oklch(80% 0.13 70 / 0.10)',
-              }
-            : {
-                border: '1px solid var(--hairline)',
-                color: 'var(--muted)',
-                background: 'transparent',
-              }),
-        }}
-      >
-        <Icon.Flag size={13} />
-        Mark for review
-      </button>
     </div>
   )
 }

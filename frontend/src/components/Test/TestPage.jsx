@@ -158,8 +158,6 @@ export default function TestPage({
         current={current}
         total={questions.length}
         answers={answers}
-        flags={flags}
-        setFlags={setFlags}
         correctCount={correctCount}
       />
       <QuestionCard
