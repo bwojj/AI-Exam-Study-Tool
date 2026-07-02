@@ -37,7 +37,8 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 origins = [
     "http://localhost:5176",  
     "http://localhost:5173",
-    "http://127.0.0.1:5176",  
+    "http://127.0.0.1:5176", 
+    "http://localhost:5174", 
     "https://ai-exam-study-tool.vercel.app",
 ]
 
