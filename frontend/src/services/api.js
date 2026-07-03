@@ -22,7 +22,13 @@ export const getReviewGuide = async (formData) => {
     body: formData,
   })
   if (response.status === 401) { onUnauthorized(); return null }
-  if (!response.ok) throw new Error(`Server Error ${response.status}`)
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}))
+    const err = new Error(body.detail || `Server Error ${response.status}`)
+    err.status = response.status
+    err.detail = body.detail || ''
+    throw err
+  }
   return response.json()
 }
 
@@ -119,7 +125,13 @@ export async function checkAnswer({ question, gen_answer, user_answer }) {
     body: form,
   })
   if (res.status === 401) { onUnauthorized(); return null }
-  if (!res.ok) throw new Error(`Check answer failed: ${res.statusText}`)
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    const err = new Error(body.detail || `Check answer failed: ${res.statusText}`)
+    err.status = res.status
+    err.detail = body.detail || ''
+    throw err
+  }
   return res.json()
 }
 

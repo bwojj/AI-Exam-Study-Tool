@@ -6,6 +6,7 @@ import Composer from './Composer'
 import Pager from './Pager'
 import FinishScreen from './FinishScreen'
 import { checkAnswer, normalizeCheckAnswer, extractFeedback, updateAnswer } from '../../services/api'
+import Modal from '../Modal'
 
 export default function TestPage({
   questions,
@@ -28,6 +29,7 @@ export default function TestPage({
   const [submitted, setSubmitted] = useState(false)
   const [checkingAnswer, setCheckingAnswer] = useState(false)
   const [shortAnswerFeedbacks, setShortAnswerFeedbacks] = useState({})
+  const [capacityError, setCapacityError] = useState(false)
   const prevCurrentRef = useRef(current)
   const prevTestIdRef = useRef(testId)
   const currentQIdRef = useRef(null)
@@ -128,6 +130,8 @@ export default function TestPage({
         // user may have navigated to a different question while grading was in flight —
         // only lock the composer if they're still looking at the question that was graded
         if (currentQIdRef.current === questionId) setSubmitted(true)
+      } catch (err) {
+        if (err?.status === 429) setCapacityError(true)
       } finally {
         if (currentQIdRef.current === questionId) setCheckingAnswer(false)
       }
@@ -165,6 +169,13 @@ export default function TestPage({
         gap: 16,
       }}
     >
+      {capacityError && (
+        <Modal
+          title="AI is at capacity"
+          message="The AI service has reached its usage limit. Please wait a bit and try submitting your answer again."
+          onClose={() => setCapacityError(false)}
+        />
+      )}
       <TestStatusBar
         q={q}
         current={current}
