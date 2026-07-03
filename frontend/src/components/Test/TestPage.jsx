@@ -29,11 +29,15 @@ export default function TestPage({
   const [checkingAnswer, setCheckingAnswer] = useState(false)
   const [shortAnswerFeedbacks, setShortAnswerFeedbacks] = useState({})
   const prevCurrentRef = useRef(current)
+  const prevTestIdRef = useRef(testId)
+  const currentQIdRef = useRef(null)
 
   useEffect(() => {
     const prev = prevCurrentRef.current
+    const prevTestId = prevTestIdRef.current
     prevCurrentRef.current = current
-    if (prev !== current) {
+    prevTestIdRef.current = testId
+    if (prevTestId === testId && prev !== current) {
       const prevQ = questions[prev]
       if (prevQ?.type === 'short answer' && !(prevQ.id in corrects)) {
         setAnswers(a => ({ ...a, [prevQ.id]: '' }))
@@ -42,7 +46,11 @@ export default function TestPage({
     setSubmitted(false)
     setCheckingAnswer(false)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current])
+  }, [current, testId])
+
+  useEffect(() => {
+    currentQIdRef.current = questions[current]?.id ?? null
+  }, [questions, current])
 
   if (questions.length === 0) {
     return (
@@ -104,6 +112,7 @@ export default function TestPage({
     if (isShortAnswer) {
       const text = userAnswerText.trim()
       if (!text) return
+      const questionId = q.id
       setCheckingAnswer(true)
       try {
         const raw = await checkAnswer({
@@ -112,13 +121,15 @@ export default function TestPage({
           user_answer: text,
         })
         const isCorrect = normalizeCheckAnswer(raw)
-        setShortAnswerResults(prev => ({ ...prev, [q.id]: isCorrect }))
-        setCorrects(prev => ({ ...prev, [q.id]: isCorrect }))
-        setShortAnswerFeedbacks(prev => ({ ...prev, [q.id]: extractFeedback(raw) }))
-        updateAnswer({ testId, question: q.id, answer: text, correct: isCorrect })
-        setSubmitted(true)
+        setShortAnswerResults(prev => ({ ...prev, [questionId]: isCorrect }))
+        setCorrects(prev => ({ ...prev, [questionId]: isCorrect }))
+        setShortAnswerFeedbacks(prev => ({ ...prev, [questionId]: extractFeedback(raw) }))
+        updateAnswer({ testId, question: questionId, answer: text, correct: isCorrect })
+        // user may have navigated to a different question while grading was in flight —
+        // only lock the composer if they're still looking at the question that was graded
+        if (currentQIdRef.current === questionId) setSubmitted(true)
       } finally {
-        setCheckingAnswer(false)
+        if (currentQIdRef.current === questionId) setCheckingAnswer(false)
       }
     } else {
       if (selectedIndex !== null) {

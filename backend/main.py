@@ -17,6 +17,7 @@ from auth import get_current_user, get_user_id
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from utilities import extract_file_information, check_binary_guardrails
+from google.api_core.exceptions import ResourceExhausted
 
 
 # creates the database tables, to be used 
@@ -281,7 +282,13 @@ async def upload_file(request: Request, user: user_dependency,
     )
 
     # returns the output 
-    output = await chain.ainvoke({"number": questions, "context": text, "difficulty": difficulty})
+    try: 
+        output = await chain.ainvoke({"number": questions, "context": text, "difficulty": difficulty})
+    except ResourceExhausted:
+        raise HTTPException(
+            status_code=429,
+            detail="AI Service at capacity, try again later"
+        )
 
     db_user = db.query(models.User).filter(models.User.id == user["id"]).first()
 
@@ -390,9 +397,13 @@ async def check_answer(request: Request, user: user_dependency, db: Session = De
                 "Feedback": lambda x: x.feedback,
             }
         )
-
-        output = await chain.ainvoke({"question": question, "gen_answer": gen_answer, "user_answer": user_answer})
-
+        try: 
+            output = await chain.ainvoke({"question": question, "gen_answer": gen_answer, "user_answer": user_answer})
+        except ResourceExhausted:
+            raise HTTPException(
+                status_code=429,
+                detail="AI Service at capacity, try again later"
+            )
         return output
 
 @app.post("/update-answer")

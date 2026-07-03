@@ -54,13 +54,14 @@ export default function App() {
 
   function onSelectTest(test) {
     const qs = buildQuestions(test)
+    const qsById = Object.fromEntries(qs.map(q => [q.id, q]))
     resetTest()
     const newAnswers = {}
     const newSAResults = {}
     const newCorrects = {}
     test.userAnswers?.forEach(ua => {
       const qId = String(ua.question_num)
-      const qType = test.type?.[ua.question_num]
+      const qType = qsById[qId]?.type
       newAnswers[qId] = qType === 'short answer' ? ua.answer : Number(ua.answer)
       if (qType === 'short answer') newSAResults[qId] = ua.correct
       newCorrects[qId] = ua.correct

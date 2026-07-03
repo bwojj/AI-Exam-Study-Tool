@@ -28,20 +28,18 @@ export default function Composer({ submitted, onSubmit, onNext, canSubmit, isLas
         &gt;
       </span>
 
-      {/* 2. Input */}
-      <input
-        type="text"
-        placeholder={submitted ? '' : 'Select an answer above, then submit…'}
-        disabled={submitted}
+      {/* 2. Prompt text */}
+      <span
         style={{
-          background: 'transparent',
-          border: 'none',
-          outline: 'none',
+          display: 'flex',
+          alignItems: 'center',
           fontSize: 14,
-          color: 'var(--ink)',
+          color: 'var(--muted)',
           width: '100%',
         }}
-      />
+      >
+        {submitted ? '' : 'Select an answer above, then submit…'}
+      </span>
 
       {/* 3. Submit / Next button */}
       {!submitted ? (
