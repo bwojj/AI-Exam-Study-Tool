@@ -13,7 +13,7 @@ langchain-community
 langchain-google-genai
 psycopg2-binary
 python-multipart
-
+google.api_core
 # test dependencies
 pytest
 httpx
