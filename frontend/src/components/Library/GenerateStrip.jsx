@@ -4,6 +4,7 @@ import { Icon } from '../Icons'
 import { getReviewGuide } from '../../services/api'
 import LoadingScreen from '../LoadingScreen'
 import Modal from '../Modal'
+import Dropdown from '../Dropdown'
 
 export default function GenerateStrip({ files, generateConfig, setGenerateConfig, setQuestions, resetTest, formData, onGenerated, setTestId }) {
   const navigate = useNavigate()
@@ -108,7 +109,7 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
         }}
       >
         {/* Left: eyebrow + heading + body */}
-        <div>
+        <div className="gen-left">
           {/* Eyebrow row */}
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <Icon.Sparkles size={14} color="var(--accent)" />
@@ -150,8 +151,8 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
           </p>
 
           {/* Test name */}
-          <div style={{ marginTop: '12px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>
+          <div className="gen-name-field" style={{ marginTop: '12px' }}>
+            <div className="gen-field-label" style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>
               Test name
             </div>
             <input
@@ -186,8 +187,9 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
           }}
         >
           {/* Questions select */}
-          <div>
+          <div className="gen-field">
             <div
+              className="gen-field-label"
               style={{
                 fontSize: '11px',
                 color: 'var(--muted)',
@@ -197,34 +199,17 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
             >
               Questions
             </div>
-            <select
+            <Dropdown
               value={generateConfig?.count ?? '20'}
-              onChange={(e) =>
-                setGenerateConfig((prev) => ({ ...prev, count: e.target.value }))
-              }
-              style={{
-                padding: '7px 10px',
-                border: '1px solid var(--hairline-strong)',
-                borderRadius: 'var(--r-sm)',
-                background: 'var(--bg-2)',
-                color: 'var(--ink)',
-                fontSize: '13px',
-                cursor: 'pointer',
-                appearance: 'none',
-                paddingRight: '24px',
-              }}
-            >
-              {['10', '20', '40', '60'].map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
+              options={['10', '20', '40', '60']}
+              onChange={(v) => setGenerateConfig((prev) => ({ ...prev, count: v }))}
+            />
           </div>
 
           {/* Difficulty select */}
-          <div>
+          <div className="gen-field">
             <div
+              className="gen-field-label"
               style={{
                 fontSize: '11px',
                 color: 'var(--muted)',
@@ -234,34 +219,17 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
             >
               Difficulty
             </div>
-            <select
+            <Dropdown
               value={generateConfig?.difficulty ?? 'Mixed'}
-              onChange={(e) =>
-                setGenerateConfig((prev) => ({ ...prev, difficulty: e.target.value }))
-              }
-              style={{
-                padding: '7px 10px',
-                border: '1px solid var(--hairline-strong)',
-                borderRadius: 'var(--r-sm)',
-                background: 'var(--bg-2)',
-                color: 'var(--ink)',
-                fontSize: '13px',
-                cursor: 'pointer',
-                appearance: 'none',
-                paddingRight: '24px',
-              }}
-            >
-              {['Mixed', 'Foundational', 'Advanced', 'Exam-grade'].map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
+              options={['Mixed', 'Foundational', 'Advanced', 'Exam-grade']}
+              onChange={(v) => setGenerateConfig((prev) => ({ ...prev, difficulty: v }))}
+            />
           </div>
 
           {/* Style select */}
-          <div>
+          <div className="gen-field">
             <div
+              className="gen-field-label"
               style={{
                 fontSize: '11px',
                 color: 'var(--muted)',
@@ -271,29 +239,11 @@ export default function GenerateStrip({ files, generateConfig, setGenerateConfig
             >
               Style
             </div>
-            <select
+            <Dropdown
               value={generateConfig?.style ?? 'Multiple choice'}
-              onChange={(e) =>
-                setGenerateConfig((prev) => ({ ...prev, style: e.target.value }))
-              }
-              style={{
-                padding: '7px 10px',
-                border: '1px solid var(--hairline-strong)',
-                borderRadius: 'var(--r-sm)',
-                background: 'var(--bg-2)',
-                color: 'var(--ink)',
-                fontSize: '13px',
-                cursor: 'pointer',
-                appearance: 'none',
-                paddingRight: '24px',
-              }}
-            >
-              {['Multiple choice', 'Short answer', 'Mixed format'].map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
+              options={['Multiple choice', 'Short answer', 'Mixed format']}
+              onChange={(v) => setGenerateConfig((prev) => ({ ...prev, style: v }))}
+            />
           </div>
 
           {/* Generate CTA */}

@@ -140,7 +140,11 @@
   /* Library – generate strip */
   .gen-heading { font-size: 15px !important; }
   .gen-sub     { font-size: 11px !important; }
+  .gen-left    { width: 100% !important; }
+  .gen-name-field { width: fit-content !important; margin: 12px auto 0 !important; }
   .gen-controls { width: 100% !important; justify-content: center !important; }
+  .gen-field   { text-align: center !important; }
+  .gen-field-label { text-align: left !important; }
 
   /* Test page wrapper */
   .test-page { padding: 16px 16px 60px !important; }

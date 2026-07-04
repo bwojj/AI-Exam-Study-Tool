@@ -28,6 +28,7 @@ import {
   Clock,
   LogOut,
   Menu,
+  ChevronDown,
 } from 'lucide-react'
 
 function GoogleIcon(props) {
@@ -71,5 +72,6 @@ export const Icon = {
   Clock,
   LogOut,
   Menu,
+  ChevronDown,
   Google: GoogleIcon,
 }
