@@ -8,7 +8,7 @@ class UserBase(BaseModel):
 # defines structured output class for LLM 
 class ReviewGuide(BaseModel):
     questions: dict[int, str]
-    answers: dict[int, int]
+    answers: dict[int, int | str]
     options: dict[int, list[str]]
     body: dict[int, str]
     explanation: dict[int, str]
